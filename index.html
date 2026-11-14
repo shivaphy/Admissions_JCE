@@ -1383,6 +1383,7 @@ function getOrCreateSheet_(ss, name, headers) {
       let currentStep = 0;
       let uploadedDocs = {};
       let activePreviewRecord = null;
+      const inMemorySessionRecords = new Map();
 
       // --- PHASE 2: HARDCODED ENDPOINT & LIVE REAL-TIME CLOUD SYNC ---
       // Replace the placeholder URL below with your deployed Google Apps Script Web App URL
@@ -1568,7 +1569,7 @@ function getOrCreateSheet_(ss, name, headers) {
             });
 
             const mergedList = Array.from(mergedMap.values());
-            localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(mergedList));
+            saveRecordsSafelyToLocalStorage(mergedList);
             updateSyncBanner(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
 
             if (!document.getElementById('admin-dashboard').classList.contains('hidden')) {
@@ -1597,6 +1598,40 @@ function getOrCreateSheet_(ss, name, headers) {
       }
 
       // --- SEED PREDEFINED RECORDS (NO REAL AADHAR NUMBERS) ---
+      // --- QUOTA-SAFE LOCALSTORAGE PERSISTENCE HELPER ---
+      // Strips multi-megabyte base64 dataUrls & Uint8Array buffers before writing to localStorage (~5MB browser limit),
+      // while preserving lightweight metadata (name, format, sizeKB, driveUrl) and keeping full binary docs in memory.
+      function stripHeavyDocPayloads(rec) {
+        if (!rec || !rec.docs) return rec;
+        const lightDocs = {};
+        Object.entries(rec.docs).forEach(([k, d]) => {
+          if (!d) return;
+          lightDocs[k] = {
+            name: d.name || k,
+            mimeType: d.mimeType || '',
+            normalizedFormat: d.normalizedFormat || '',
+            sizeKB: d.sizeKB || 0,
+            driveUrl: d.driveUrl || ''
+          };
+        });
+        return { ...rec, docs: lightDocs };
+      }
+
+      function saveRecordsSafelyToLocalStorage(recordsList) {
+        const sanitized = recordsList.map(stripHeavyDocPayloads);
+        try {
+          localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(sanitized));
+        } catch (quotaErr) {
+          // If localStorage is still full from other keys, prune to the most recent 25 lightweight records
+          try {
+            const trimmed = sanitized.slice(-25);
+            localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(trimmed));
+          } catch (innerErr) {
+            console.warn('Browser localStorage quota full; keeping current session in memory:', innerErr);
+          }
+        }
+      }
+
       function seedPredefinedRecords() {
         const existing = JSON.parse(localStorage.getItem(STORAGE_KEYS.RECORDS) || '[]');
         if (existing.length > 0) return;
@@ -1798,7 +1833,7 @@ function getOrCreateSheet_(ss, name, headers) {
           }
         ];
 
-        localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(predefined));
+        saveRecordsSafelyToLocalStorage(predefined);
       }
 
       // --- NAVIGATION ---
@@ -3035,7 +3070,7 @@ function getOrCreateSheet_(ss, name, headers) {
         tbody.querySelectorAll('[data-view-pdf]').forEach(btn => {
           btn.addEventListener('click', () => {
             const id = btn.getAttribute('data-view-pdf');
-            const rec = allRecords.find(x => x.Admission_ID === id);
+            const rec = inMemorySessionRecords.get(String(id)) || allRecords.find(x => x.Admission_ID === id);
             if (rec) {
               renderResumePreview(rec);
               switchView('resume');
@@ -3046,7 +3081,7 @@ function getOrCreateSheet_(ss, name, headers) {
         tbody.querySelectorAll('[data-zip-rec]').forEach(btn => {
           btn.addEventListener('click', async () => {
             const id = btn.getAttribute('data-zip-rec');
-            const rec = allRecords.find(x => x.Admission_ID === id);
+            const rec = inMemorySessionRecords.get(String(id)) || allRecords.find(x => x.Admission_ID === id);
             if (rec) {
               renderResumePreview(rec);
               await downloadStudentZipDossier(rec);
@@ -3057,7 +3092,7 @@ function getOrCreateSheet_(ss, name, headers) {
         tbody.querySelectorAll('[data-edit-rec]').forEach(btn => {
           btn.addEventListener('click', () => {
             const id = btn.getAttribute('data-edit-rec');
-            const rec = allRecords.find(x => x.Admission_ID === id);
+            const rec = inMemorySessionRecords.get(String(id)) || allRecords.find(x => x.Admission_ID === id);
             if (!rec) return;
             document.getElementById('edit-modal-id').textContent = id;
             document.getElementById('edit-admission-id').value = id;
@@ -3287,14 +3322,20 @@ function getOrCreateSheet_(ss, name, headers) {
               newRecord.emailStatus = `SENT (${data.email})`;
               if (cloudRes.driveUrl) newRecord.driveFolderPath = cloudRes.driveUrl;
               if (cloudRes.resumePdfDriveUrl) newRecord.resumePdfDriveUrl = cloudRes.resumePdfDriveUrl;
+              if (cloudRes.docLinks && newRecord.docs) {
+                Object.entries(cloudRes.docLinks).forEach(([k, url]) => {
+                  if (newRecord.docs[k]) newRecord.docs[k].driveUrl = url;
+                });
+              }
             } else {
               newRecord.cloudSyncStatus = `LOCAL ONLY (${cloudRes.error || 'Sync failed'})`;
               newRecord.emailStatus = `NOT SENT (Cloud sync error)`;
             }
 
             // 3. Save locally as backup & re-render status banner with exact cloud result
+            inMemorySessionRecords.set(String(newRecord.Admission_ID), newRecord);
             records.push(newRecord);
-            localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(records));
+            saveRecordsSafelyToLocalStorage(records);
             localStorage.removeItem(STORAGE_KEYS.DRAFT);
 
             renderResumePreview(newRecord);
@@ -3448,7 +3489,7 @@ function getOrCreateSheet_(ss, name, headers) {
             whatsAppStatus: resend ? `RESENT (${timestamp.slice(0, 10)})` : oldRec.whatsAppStatus
           };
 
-          localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(records));
+          saveRecordsSafelyToLocalStorage(records);
           localStorage.setItem(STORAGE_KEYS.AUDIT, JSON.stringify(auditLogs));
           await syncRecordToGoogleAppsScript({ ...records[idx], auditEntries: newAuditEntries });
 
