@@ -1,0 +1,3264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VTU Student Admission Portal 2026 | Jain College of Engineering, Belagavi</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Client-side PDF & ZIP generation libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+  <style>
+    @media print {
+      body * { visibility: hidden; }
+      #printable-resume, #printable-resume * { visibility: visible; }
+      #printable-resume {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .no-print { display: none !important; }
+    }
+    input:focus, select:focus, textarea:focus, button:focus {
+      outline: 2px solid #1e3a8a;
+      outline-offset: 2px;
+    }
+    /* Mobile Camera Document Scanner Frame & Touch Targets */
+    .scanner-guide-frame {
+      position: relative;
+      border: 2px dashed rgba(255, 255, 255, 0.85);
+      box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.55);
+      border-radius: 0.75rem;
+    }
+    .scanner-corner {
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      border-color: #34d399;
+      border-style: solid;
+    }
+    .scanner-corner.tl { top: -2px; left: -2px; border-width: 4px 0 0 4px; border-top-left-radius: 0.75rem; }
+    .scanner-corner.tr { top: -2px; right: -2px; border-width: 4px 4px 0 0; border-top-right-radius: 0.75rem; }
+    .scanner-corner.bl { bottom: -2px; left: -2px; border-width: 0 0 4px 4px; border-bottom-left-radius: 0.75rem; }
+    .scanner-corner.br { bottom: -2px; right: -2px; border-width: 0 4px 4px 0; border-bottom-right-radius: 0.75rem; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col font-sans">
+
+  <!-- TOP INSTITUTIONAL HEADER -->
+  <header class="bg-blue-950 text-white shadow-md no-print">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div>
+        <p class="text-xs uppercase tracking-wider text-blue-200">Visvesvaraya Technological University, Belagavi (Region: 2 | Code: JI)</p>
+        <h1 class="text-lg sm:text-xl font-bold tracking-tight">JAIN COLLEGE OF ENGINEERING, BELAGAVI</h1>
+        <p class="text-xs text-blue-300">Student Admission &amp; Resume Portal — Academic Year 2026–27 (B.E. | MBA | MCA | M.Tech)</p>
+      </div>
+      <nav aria-label="Primary Mode Switcher" class="flex flex-wrap gap-2">
+        <button type="button" id="nav-student-btn" class="px-3.5 py-2 rounded text-sm font-semibold bg-white text-blue-950 shadow cursor-pointer">
+          Student Entry
+        </button>
+        <button type="button" id="nav-track-btn" class="px-3.5 py-2 rounded text-sm font-semibold bg-blue-800 text-white hover:bg-blue-700 cursor-pointer">
+          Track / Reprint
+        </button>
+        <button type="button" id="nav-admin-btn" class="px-3.5 py-2 rounded text-sm font-semibold bg-blue-800 text-white hover:bg-blue-700 cursor-pointer">
+          Staff / Admin Portal
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- CLOUD SYNC STATUS BAR -->
+  <div class="bg-slate-900 text-slate-200 text-xs px-4 py-1.5 no-print">
+    <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <span id="sync-status-dot" class="inline-block w-2 h-2 rounded-full bg-amber-400"></span>
+        <span id="sync-status-text">Storage Mode: Local Browser + Google Apps Script Ready</span>
+      </div>
+      <button type="button" id="open-gas-modal-btn" class="text-blue-300 hover:text-white underline font-semibold cursor-pointer">
+        Configure Google Apps Script Endpoint &amp; View Backend Code
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN APPLICATION CONTAINER -->
+  <main class="flex-grow max-w-6xl w-full mx-auto px-4 py-6">
+
+    <!-- =====================================================================
+         VIEW 1: STUDENT ADMISSION MULTI-STEP FORM
+    ====================================================================== -->
+    <section id="view-student" aria-labelledby="student-form-heading">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-4 mb-5 gap-2">
+          <div>
+            <h2 id="student-form-heading" class="text-xl font-bold text-blue-950">New Student Admission Resume Entry</h2>
+            <p class="text-xs text-slate-500">All fields match VTU &amp; KEA 2026 norms. Drafts autosave locally in your browser.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" id="load-sample-btn" class="text-xs bg-blue-50 text-blue-900 border border-blue-300 hover:bg-blue-100 px-2.5 py-1 rounded font-semibold cursor-pointer">
+              Fill Sample Data
+            </button>
+            <span id="autosave-indicator" class="text-xs text-emerald-700 font-medium bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200">
+              Draft Autosaved
+            </span>
+            <button type="button" id="reset-form-btn" class="text-xs text-red-600 hover:underline font-medium px-1 cursor-pointer">
+              Reset Form
+            </button>
+          </div>
+        </div>
+
+        <!-- PROGRESS STEPPER -->
+        <nav aria-label="Form Steps" class="mb-6">
+          <ol id="stepper-nav" class="grid grid-cols-2 sm:grid-cols-6 gap-2 text-xs font-semibold"></ol>
+        </nav>
+
+        <!-- MULTI-STEP FORM -->
+        <form id="admission-form" novalidate>
+          <!-- STEP 0: COLLEGE & COURSE -->
+          <div class="form-step space-y-4" data-step="0">
+            <h3 class="text-base font-bold text-blue-900 border-b pb-1">1. College &amp; Program Selection</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 p-3 rounded border border-slate-200 text-sm">
+              <div><span class="text-slate-500 block text-xs">VTU Region</span><strong>2 (Belagavi)</strong></div>
+              <div><span class="text-slate-500 block text-xs">College Code</span><strong>JI</strong></div>
+              <div><span class="text-slate-500 block text-xs">Institution</span><strong>Jain College of Engineering, Belagavi</strong></div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label for="course" class="block text-sm font-semibold mb-1">Course *</label>
+                <select id="course" name="course" class="w-full border border-slate-300 rounded px-3 py-2 bg-white font-medium">
+                  <option value="BE">B.E. (Bachelor of Engineering)</option>
+                  <option value="MBA">MBA (Master of Business Administration)</option>
+                  <option value="MCA">MCA (Master of Computer Applications)</option>
+                  <option value="M.Tech">M.Tech (Master of Technology)</option>
+                </select>
+              </div>
+              <div>
+                <label for="programme" class="block text-sm font-semibold mb-1">Programme (Auto-assigned) *</label>
+                <input id="programme" name="programme" type="text" readonly class="w-full border border-slate-300 rounded px-3 py-2 bg-slate-100 text-blue-950 font-bold" value="UG" />
+              </div>
+              <div>
+                <label for="branch" class="block text-sm font-semibold mb-1">Branch / Specialization *</label>
+                <select id="branch" name="branch" class="w-full border border-slate-300 rounded px-3 py-2 bg-white font-medium"></select>
+              </div>
+            </div>
+          </div>
+
+          <!-- STEP 1: PERSONAL & IDENTITY DETAILS -->
+          <div class="form-step hidden space-y-4" data-step="1">
+            <h3 class="text-base font-bold text-blue-900 border-b pb-1">2. Personal &amp; Identity Details</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label for="candidateName10th" class="block text-sm font-semibold mb-1">Candidate Name (As per 10th Marks Card) *</label>
+                <input id="candidateName10th" name="candidateName10th" type="text" required placeholder="e.g., AISHWARYA JAGADISH HONAKADE" class="w-full border border-slate-300 rounded px-3 py-2 uppercase" />
+                <p class="error-msg text-xs text-red-600 mt-1 hidden"></p>
+              </div>
+              <div>
+                <label for="candidateNameId" class="block text-sm font-semibold mb-1">Name (As in Aadhar / Passport / Govt ID) *</label>
+                <input id="candidateNameId" name="candidateNameId" type="text" required class="w-full border border-slate-300 rounded px-3 py-2 uppercase" />
+                <p class="error-msg text-xs text-red-600 mt-1 hidden"></p>
+              </div>
+              <div>
+                <label for="fatherName" class="block text-sm font-semibold mb-1">Father's Name *</label>
+                <input id="fatherName" name="fatherName" type="text" required class="w-full border border-slate-300 rounded px-3 py-2 uppercase" />
+                <p class="error-msg text-xs text-red-600 mt-1 hidden"></p>
+              </div>
+              <div>
+                <label for="motherName" class="block text-sm font-semibold mb-1">Mother's Name *</label>
+                <input id="motherName" name="motherName" type="text" required class="w-full border border-slate-300 rounded px-3 py-2 uppercase" />
+                <p class="error-msg text-xs text-red-600 mt-1 hidden"></p>
+              </div>
+              <div>
+                <label for="gender" class="block text-sm font-semibold mb-1">Gender *</label>
+                <select id="gender" name="gender" class="w-full border border-slate-300 rounded px-3 py-2 bg-white">
+                  <option value="Female">Female</option>
+                  <option value="Male">Male</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label for="dob" class="block text-sm font-semibold mb-1">Date of Birth (As per SSLC) *</label>
+                <input id="dob" name="dob" type="date" required class="w-full border border-slate-300 rounded px-3 py-2" />
+                <p class="error-msg text-xs text-red-600 mt-1 hidden"></p>
+              </div>
+              <div>
+                <label for="nationality" class="block text-sm font-semibold mb-1">Nationality *</label>
+                <select id="nationality" name="nationality" class="w-full border border-slate-300 rounded px-3 py-2 bg-white">
+                  <option value="Indian">Indian</option>
+                  <option value="Foreign / NRI">Foreign / NRI / OCI</option>
+                </select>
+              </div>
+              <div>
+                <label for="stateCountry" class="block text-sm font-semibold mb-1">Domicile State / Country *</label>
+                <select id="stateCountry" name="stateCountry" class="w-full border border-slate-300 rounded px-3 py-2 bg-white">
+                  <option value="Karnataka">Karnataka</option>
+                  <option value="Maharashtra">Maharashtra</option>
+                  <option value="Goa">Goa</option>
+                  <option value="Andhra Pradesh">Andhra Pradesh</option>
+                  <option value="Telangana">Telangana</option>
+                  <option value="Tamil Nadu">Tamil Nadu</option>
+                  <option value="Kerala">Kerala</option>
+                  <option value="Other Indian State">Other Indian State</option>
+                  <option value="Outside India">Outside India</option>
+                </select>
+              </div>
+              <div>
+                <label for="religion" class="block text-sm font-semibold mb-1">Religion *</label>
+                <select id="religion" name="religion" class="w-full border border-slate-300 rounded px-3 py-2 bg-white">
+                  <option value="Hindu">Hindu</option>
+                  <option value="Muslim">Muslim</option>
+                  <option value="Christian">Christian</option>
+                  <option value="Jain">Jain</option>
+                  <option value="Sikh">Sikh</option>
+                  <option value="Buddhist">Buddhist</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div id="other-religion-wrap" class="hidden">
+                <label for="otherReligion" class="block text-sm font-semibold mb-1">Specify Other Religion *</label>
+                <input id="otherReligion" name="otherReligion" type="text" class="w-full border border-slate-300 rounded px-3 py-2" />
+              </div>
+              <div>
+                <label for="idType" class="block text-sm font-semibold mb-1">Identity Document Type *</label>
+                <select id="idType" name="idType" class="w-full border border-slate-300 rounded px-3 py-2 bg-white">
+                  <option value="Aadhar">Aadhar Card (12-Digit UID)</option>
+                  <option value="PAN">PAN Card</option>
+                  <option value="Passport">Passport</option>
+                </select>
+              </div>
+              <div>
+                <label for="idNumber" class="block text-sm font-semibold mb-1">Aadhar / PAN / Passport Number *</label>
+                <input id="idNumber" name="idNumber" type="text" required placeholder="12-digit UID for Aadhar" class="w-full border border-slate-300 rounded px-3 py-2" />
+                <p class="error-msg text-xs text-red-600 mt-1 hidden"></p>
+              </div>
+            </div>
+
+            <!-- CONDITIONAL FOREIGN / VISA FIELDS -->
+            <div id="foreign-fields" class="hidden bg-amber-50 border border-amber-200 p-4 rounded space-y-3">
+              <h4 class="text-sm font-bold text-amber-900">Foreign / NRI Student Visa &amp; FRRO Details</h4>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label for="passportNo" class="block text-xs font-semibold mb-1">Passport Number *</label>
+                  <input id="passportNo" name="passportNo" type="text" class="w-full border rounded px-2.5 py-1.5 bg-white" />
+                </div>
+                <div>
+                  <label for="visaNo" class="block text-xs font-semibold mb-1">Visa Number *</label>
+                  <input id="visaNo" name="visaNo" type="text" class="w-full border rounded px-2.5 py-1.5 bg-white" />
+                </div>
+                <div>
+                  <label for="visaType" class="block text-xs font-semibold mb-1">Type of Visa</label>
+                  <select id="visaType" name="visaType" class="w-full border rounded px-2.5 py-1.5 bg-white">
+                    <option value="Student Visa">Student Visa</option>
+                    <option value="OCI">OCI Card</option>
+                    <option value="Diplomatic">Diplomatic</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="visaValidity" class="block text-xs font-semibold mb-1">Visa Date of Validity</label>
+                  <input id="visaValidity" name="visaValidity" type="date" class="w-full border rounded px-2.5 py-1.5 bg-white" />
+                </div>
+                <div class="sm:col-span-2">
+                  <label for="policeJurisdiction" class="block text-xs font-semibold mb-1">Jurisdiction of Police Station</label>
+                  <input id="policeJurisdiction" name="policeJurisdiction" type="text" class="w-full border rounded px-2.5 py-1.5 bg-white" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- STEP 2: CONTACT, PARENT & ADDRESS -->
+          <div class="form-step hidden space-y-4" data-step="2">
+            <h3 class="text-base font-bold text-blue-900 border-b pb-1">3. Contact, Parent &amp; Residential Details</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label for="mobile" class="block text-sm font-semibold mb-1">Student Mobile Number (10-digit) *</label>
+                <input id="mobile" name="mobile" type="tel" maxlength="10" required placeholder="9876543210" class="w-full border border-slate-300 rounded px-3 py-2" />
+                <p class="error-msg text-xs text-red-600 mt-1 hidden"></p>
+              </div>
+              <div>
+                <label for="whatsappMobile" class="block text-sm font-semibold mb-1">WhatsApp Number (For PDF Copy) *</label>
+                <input id="whatsappMobile" name="whatsappMobile" type="tel" maxlength="10" required placeholder="9876543210" class="w-full border border-slate-300 rounded px-3 py-2" />
+                <p class="error-msg text-xs text-red-600 mt-1 hidden"></p>
+              </div>
+              <div>
+                <label for="email" class="block text-sm font-semibold mb-1">Registered Email Address *</label>
+                <input id="email" name="email" type="email" required placeholder="student@example.com" class="w-full border border-slate-300 rounded px-3 py-2" />
+                <p class="error-msg text-xs text-red-600 mt-1 hidden"></p>
+              </div>
+              <div>
+                <label for="phone" class="block text-sm font-semibold mb-1">Parent / Landline Phone</label>
+                <input id="phone" name="phone" type="tel" class="w-full border border-slate-300 rounded px-3 py-2" />
+              </div>
+              <div>
+                <label for="parentOccupation" class="block text-sm font-semibold mb-1">Parent's Occupation *</label>
+                <select id="parentOccupation" name="parentOccupation" class="w-full border border-slate-300 rounded px-3 py-2 bg-white">
+                  <option value="Agriculture">Agriculture</option>
+                  <option value="Business">Business / Self-Employed</option>
+                  <option value="Government Service">Government Service</option>
+                  <option value="Private Sector">Private Sector</option>
+                  <option value="Teaching / Academic">Teaching / Academic</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label for="cityType" class="block text-sm font-semibold mb-1">City / Area Type *</label>
+                <select id="cityType" name="cityType" class="w-full border border-slate-300 rounded px-3 py-2 bg-white">
+                  <option value="Urban">Urban</option>
+                  <option value="Rural">Rural</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label for="currentAddress" class="block text-sm font-semibold mb-1">Current Residential / Hostel Address *</label>
+                <textarea id="currentAddress" name="currentAddress" rows="2" required class="w-full border border-slate-300 rounded px-3 py-2"></textarea>
+                <p class="error-msg text-xs text-red-600 mt-1 hidden"></p>
+              </div>
+              <div class="space-y-2">
+                <div>
+                  <label for="ownerPrincipalName" class="block text-xs font-semibold mb-1">House Owner / Hostel Warden / Principal Name *</label>
+                  <input id="ownerPrincipalName" name="ownerPrincipalName" type="text" required class="w-full border border-slate-300 rounded px-3 py-1.5" />
+                  <p class="error-msg text-xs text-red-600 mt-1 hidden"></p>
+                </div>
+                <div>
+                  <label for="ownerPrincipalMobile" class="block text-xs font-semibold mb-1">Owner / Warden Mobile Number *</label>
+                  <input id="ownerPrincipalMobile" name="ownerPrincipalMobile" type="tel" maxlength="10" required class="w-full border border-slate-300 rounded px-3 py-1.5" />
+                  <p class="error-msg text-xs text-red-600 mt-1 hidden"></p>
+                </div>
+              </div>
+              <div>
+                <label for="permanentAddress" class="block text-sm font-semibold mb-1">Permanent Address *</label>
+                <textarea id="permanentAddress" name="permanentAddress" rows="2" required class="w-full border border-slate-300 rounded px-3 py-2"></textarea>
+                <p class="error-msg text-xs text-red-600 mt-1 hidden"></p>
+              </div>
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label for="correspondenceAddress" class="block text-sm font-semibold">Correspondence Address *</label>
+                  <label class="text-xs text-blue-800 flex items-center gap-1 cursor-pointer">
+                    <input type="checkbox" id="sameAsPerm" /> Same as Permanent
+                  </label>
+                </div>
+                <textarea id="correspondenceAddress" name="correspondenceAddress" rows="2" required class="w-full border border-slate-300 rounded px-3 py-2"></textarea>
+                <p class="error-msg text-xs text-red-600 mt-1 hidden"></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- STEP 3: COLLEGE JOINING & ENTRANCE EXAM DETAILS -->
+          <div class="form-step hidden space-y-4" data-step="3">
+            <h3 class="text-base font-bold text-blue-900 border-b pb-1">4. College Joining &amp; Entrance Exam (KEA / PGCET / COMED-K)</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label for="admissionDate" class="block text-sm font-semibold mb-1">Date of Admission *</label>
+                <input id="admissionDate" name="admissionDate" type="date" required class="w-full border border-slate-300 rounded px-3 py-2" />
+                <p class="error-msg text-xs text-red-600 mt-1 hidden"></p>
+              </div>
+              <div>
+                <label for="admissionMode" class="block text-sm font-semibold mb-1">Admission Mode *</label>
+                <select id="admissionMode" name="admissionMode" class="w-full border border-slate-300 rounded px-3 py-2 bg-white">
+                  <option value="KEA">KEA (CET / PGCET)</option>
+                  <option value="COMED-K">COMED-K</option>
+                  <option value="KRLPMCA">KRLPMCA / KMAT</option>
+                  <option value="Management">Management Quota</option>
+                </select>
+              </div>
+              <div>
+                <label for="joiningSemester" class="block text-sm font-semibold mb-1">Joining Semester *</label>
+                <select id="joiningSemester" name="joiningSemester" class="w-full border border-slate-300 rounded px-3 py-2 bg-white">
+                  <option value="1st Semester">1st Semester (Regular)</option>
+                  <option value="3rd Semester (Lateral)">3rd Semester (Diploma Lateral Entry)</option>
+                </select>
+              </div>
+              <div>
+                <label for="seatNumber" class="block text-sm font-semibold mb-1">Entrance / Allotment Seat Number *</label>
+                <input id="seatNumber" name="seatNumber" type="text" required placeholder="e.g., 26UGEAK485" class="w-full border border-slate-300 rounded px-3 py-2 uppercase" />
+                <p class="error-msg text-xs text-red-600 mt-1 hidden"></p>
+              </div>
+              <div>
+                <label for="rank" class="block text-sm font-semibold mb-1">Entrance Exam Rank *</label>
+                <input id="rank" name="rank" type="number" min="1" required placeholder="e.g., 141637" class="w-full border border-slate-300 rounded px-3 py-2" />
+                <p class="error-msg text-xs text-red-600 mt-1 hidden"></p>
+              </div>
+              <div>
+                <label for="seatType" class="block text-sm font-semibold mb-1">Seat Type *</label>
+                <select id="seatType" name="seatType" class="w-full border border-slate-300 rounded px-3 py-2 bg-white">
+                  <option value="Government">Government (KEA)</option>
+                  <option value="SNQ">SNQ (Supernumerary Quota)</option>
+                  <option value="COMED-K">COMED-K</option>
+                  <option value="Management">Management</option>
+                </select>
+              </div>
+              <div>
+                <label for="actualCategory" class="block text-sm font-semibold mb-1">Actual Category *</label>
+                <select id="actualCategory" name="actualCategory" class="w-full border border-slate-300 rounded px-3 py-2 bg-white">
+                  <option value="GM">GM (General Merit)</option>
+                  <option value="S1G">S1G (SC General)</option>
+                  <option value="STG">STG (ST General)</option>
+                  <option value="C1G">C1G (Cat-1)</option>
+                  <option value="2AG">2AG</option>
+                  <option value="2BG">2BG</option>
+                  <option value="3AG">3AG</option>
+                  <option value="3BG">3BG</option>
+                </select>
+              </div>
+              <div>
+                <label for="allottedCategory" class="block text-sm font-semibold mb-1">Seat Allotted Category *</label>
+                <select id="allottedCategory" name="allottedCategory" class="w-full border border-slate-300 rounded px-3 py-2 bg-white">
+                  <option value="GM">GM</option>
+                  <option value="S1G">S1G</option>
+                  <option value="STG">STG</option>
+                  <option value="C1G">C1G</option>
+                  <option value="2AG">2AG</option>
+                  <option value="2BG">2BG</option>
+                  <option value="3AG">3AG</option>
+                  <option value="3BG">3BG</option>
+                  <option value="GMK">GMK (Kannada Medium)</option>
+                  <option value="GMR">GMR (Rural)</option>
+                  <option value="GMH">GMH (HK-371J)</option>
+                </select>
+              </div>
+              <div>
+                <label for="caste" class="block text-sm font-semibold mb-1">Caste / Sub-Caste *</label>
+                <input id="caste" name="caste" type="text" required placeholder="e.g., Chambhar (Group-A) / Lingayat" class="w-full border border-slate-300 rounded px-3 py-2" />
+                <p class="error-msg text-xs text-red-600 mt-1 hidden"></p>
+              </div>
+              <div>
+                <label for="otherReservation" class="block text-sm font-semibold mb-1">Other Special Reservation</label>
+                <select id="otherReservation" name="otherReservation" class="w-full border border-slate-300 rounded px-3 py-2 bg-white">
+                  <option value="None">None</option>
+                  <option value="Rural">Rural Quota</option>
+                  <option value="NCC / Sports">NCC / Sports</option>
+                  <option value="Defence / Ex-Servicemen">Defence / Ex-Servicemen</option>
+                  <option value="Physically Challenged (PH)">Physically Challenged (PH)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- STEP 4: ACADEMIC QUALIFICATIONS & PUC PCM MARKS -->
+          <div class="form-step hidden space-y-5" data-step="4">
+            <h3 class="text-base font-bold text-blue-900 border-b pb-1">5. Basic Education &amp; Qualifying Marks</h3>
+
+            <!-- SSLC / X -->
+            <div class="border border-slate-200 rounded p-3 bg-slate-50 space-y-2">
+              <h4 class="text-sm font-bold text-slate-800">X / SSLC / ICSE / CBSE / Equivalent *</h4>
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                <div>
+                  <label for="sslcStudiedInKA" class="block text-xs font-semibold mb-1">Studied in KA?</label>
+                  <select id="sslcStudiedInKA" name="sslcStudiedInKA" class="w-full border rounded px-2 py-1.5 bg-white text-sm">
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="sslcState" class="block text-xs font-semibold mb-1">State / Country</label>
+                  <input id="sslcState" name="sslcState" type="text" value="Karnataka" class="w-full border rounded px-2 py-1.5 bg-white text-sm" />
+                </div>
+                <div>
+                  <label for="sslcBoard" class="block text-xs font-semibold mb-1">SSLC / X Examination Board *</label>
+                  <select id="sslcBoard" name="sslcBoard" class="w-full border rounded px-2 py-1.5 bg-white text-sm">
+                    <option value="Karnataka SSLC Board (KSEAB)">Karnataka SSLC Board (KSEAB)</option>
+                    <option value="CBSE">CBSE</option>
+                    <option value="ICSE">ICSE</option>
+                    <option value="Maharashtra State Board">Maharashtra State Board</option>
+                    <option value="Goa Board">Goa Board</option>
+                    <option value="Andhra Pradesh / Telangana Board">Andhra Pradesh / Telangana Board</option>
+                    <option value="Tamil Nadu State Board">Tamil Nadu State Board</option>
+                    <option value="Kerala State Board">Kerala State Board</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  <p class="error-msg text-xs text-red-600 mt-1 hidden"></p>
+                </div>
+                <div id="sslc-other-board-wrap" class="hidden">
+                  <label for="sslcOtherBoard" class="block text-xs font-semibold mb-1">Specify Other SSLC Board *</label>
+                  <input id="sslcOtherBoard" name="sslcOtherBoard" type="text" placeholder="Enter Board Name" class="w-full border rounded px-2 py-1.5 bg-white text-sm" />
+                  <p class="error-msg text-xs text-red-600 mt-1 hidden"></p>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                <div>
+                  <label for="sslcRegNo" class="block text-xs font-semibold mb-1">Reg. Number *</label>
+                  <input id="sslcRegNo" name="sslcRegNo" type="text" required class="w-full border rounded px-2 py-1.5 bg-white text-sm" />
+                  <p class="error-msg text-xs text-red-600 mt-1 hidden"></p>
+                </div>
+                <div>
+                  <label for="sslcPassMonthYear" class="block text-xs font-semibold mb-1">Passing Month/Yr *</label>
+                  <input id="sslcPassMonthYear" name="sslcPassMonthYear" type="text" placeholder="APR-2024" required class="w-full border rounded px-2 py-1.5 bg-white text-sm" />
+                  <p class="error-msg text-xs text-red-600 mt-1 hidden"></p>
+                </div>
+                <div>
+                  <label for="sslcObtainedMarks" class="block text-xs font-semibold mb-1">Obtained Marks *</label>
+                  <input id="sslcObtainedMarks" name="sslcObtainedMarks" type="number" required class="w-full border rounded px-2 py-1.5 bg-white text-sm" />
+                  <p class="error-msg text-xs text-red-600 mt-1 hidden"></p>
+                </div>
+                <div>
+                  <label for="sslcMaxMarks" class="block text-xs font-semibold mb-1">Max Marks *</label>
+                  <input id="sslcMaxMarks" name="sslcMaxMarks" type="number" value="625" required class="w-full border rounded px-2 py-1.5 bg-white text-sm" />
+                  <p class="error-msg text-xs text-red-600 mt-1 hidden"></p>
+                </div>
+              </div>
+              <p id="sslc-pct-display" class="text-xs text-blue-900 font-semibold mt-1"></p>
+            </div>
+
+            <!-- PUC / XII (Shown for UG Regular) -->
+            <div id="puc-section" class="border border-slate-200 rounded p-3 bg-slate-50 space-y-3">
+              <h4 class="text-sm font-bold text-slate-800">PUC / XII / Equivalent &amp; PCM Subject Marks</h4>
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                <div>
+                  <label for="pucStudiedInKA" class="block text-xs font-semibold mb-1">Studied in KA?</label>
+                  <select id="pucStudiedInKA" name="pucStudiedInKA" class="w-full border rounded px-2 py-1.5 bg-white text-sm">
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="pucState" class="block text-xs font-semibold mb-1">State / Country</label>
+                  <input id="pucState" name="pucState" type="text" value="Karnataka" class="w-full border rounded px-2 py-1.5 bg-white text-sm" />
+                </div>
+                <div>
+                  <label for="pucBoard" class="block text-xs font-semibold mb-1">PUC / XII Examination Board *</label>
+                  <select id="pucBoard" name="pucBoard" class="w-full border rounded px-2 py-1.5 bg-white text-sm">
+                    <option value="Karnataka School Examination and Assessment Board, Bengaluru">Karnataka School Examination and Assessment Board, Bengaluru</option>
+                    <option value="Karnataka PU Board">Karnataka PU Board</option>
+                    <option value="CBSE">CBSE</option>
+                    <option value="ISC / ICSE">ISC / ICSE</option>
+                    <option value="Maharashtra HSC Board">Maharashtra HSC Board</option>
+                    <option value="Goa Board">Goa Board</option>
+                    <option value="Andhra Pradesh / Telangana BIE">Andhra Pradesh / Telangana BIE</option>
+                    <option value="Tamil Nadu HSC Board">Tamil Nadu HSC Board</option>
+                    <option value="Kerala DHSE">Kerala DHSE</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  <p class="error-msg text-xs text-red-600 mt-1 hidden"></p>
+                </div>
+                <div id="puc-other-board-wrap" class="hidden">
+                  <label for="pucOtherBoard" class="block text-xs font-semibold mb-1">Specify Other PUC / XII Board *</label>
+                  <input id="pucOtherBoard" name="pucOtherBoard" type="text" placeholder="Enter Board Name" class="w-full border rounded px-2 py-1.5 bg-white text-sm" />
+                  <p class="error-msg text-xs text-red-600 mt-1 hidden"></p>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                <div>
+                  <label for="pucRegNo" class="block text-xs font-semibold mb-1">Reg. Number</label>
+                  <input id="pucRegNo" name="pucRegNo" type="text" class="w-full border rounded px-2 py-1.5 bg-white text-sm" />
+                </div>
+                <div>
+                  <label for="pucPassMonthYear" class="block text-xs font-semibold mb-1">Passing Month/Yr</label>
+                  <input id="pucPassMonthYear" name="pucPassMonthYear" type="text" placeholder="MAR-2026" class="w-full border rounded px-2 py-1.5 bg-white text-sm" />
+                </div>
+                <div>
+                  <label for="pucObtainedMarks" class="block text-xs font-semibold mb-1">Obtained Marks</label>
+                  <input id="pucObtainedMarks" name="pucObtainedMarks" type="number" class="w-full border rounded px-2 py-1.5 bg-white text-sm" />
+                </div>
+                <div>
+                  <label for="pucMaxMarks" class="block text-xs font-semibold mb-1">Max Marks</label>
+                  <input id="pucMaxMarks" name="pucMaxMarks" type="number" value="600" class="w-full border rounded px-2 py-1.5 bg-white text-sm" />
+                </div>
+              </div>
+
+              <!-- SUBJECT 1, 2, 3 (PCM) -->
+              <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2 border-t border-slate-200">
+                <div>
+                  <label class="block text-xs font-semibold mb-1">Subject 1 (Physics)</label>
+                  <input id="sub1Marks" name="sub1Marks" type="number" max="100" placeholder="Marks / 100" class="w-full border rounded px-2 py-1.5 bg-white text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold mb-1">Subject 2 (Chemistry)</label>
+                  <input id="sub2Marks" name="sub2Marks" type="number" max="100" placeholder="Marks / 100" class="w-full border rounded px-2 py-1.5 bg-white text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold mb-1">Subject 3 (Maths)</label>
+                  <input id="sub3Marks" name="sub3Marks" type="number" max="100" placeholder="Marks / 100" class="w-full border rounded px-2 py-1.5 bg-white text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold mb-1">PCM Total (300)</label>
+                  <input id="pcmTotal" name="pcmTotal" type="text" readonly class="w-full border rounded px-2 py-1.5 bg-blue-50 font-bold text-blue-950 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold mb-1">PCM Average (%)</label>
+                  <input id="pcmAvg" name="pcmAvg" type="text" readonly class="w-full border rounded px-2 py-1.5 bg-blue-50 font-bold text-blue-950 text-sm" />
+                </div>
+              </div>
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <label class="block text-xs font-semibold mb-1">Medium of Instruction</label>
+                  <select name="mediumOfInstruction" class="w-full sm:w-48 border rounded px-2 py-1.5 bg-white text-sm">
+                    <option value="English">English</option>
+                    <option value="Kannada">Kannada</option>
+                  </select>
+                </div>
+                <p id="eligibility-badge" class="text-xs font-semibold px-3 py-1.5 rounded bg-slate-200 text-slate-700"></p>
+              </div>
+            </div>
+
+            <!-- DIPLOMA (Shown for Lateral Entry) -->
+            <div id="diploma-section" class="hidden border border-slate-200 rounded p-3 bg-slate-50">
+              <h4 class="text-sm font-bold text-slate-800 mb-2">Diploma / Equivalent (For Lateral Entry)</h4>
+              <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                <div><label class="block text-xs font-semibold mb-1">Reg. Number</label><input name="diplomaRegNo" type="text" class="w-full border rounded px-2 py-1.5 bg-white text-sm" /></div>
+                <div><label class="block text-xs font-semibold mb-1">Passing Month/Yr</label><input name="diplomaPassMonthYear" type="text" class="w-full border rounded px-2 py-1.5 bg-white text-sm" /></div>
+                <div><label class="block text-xs font-semibold mb-1">Obtained Marks</label><input name="diplomaObtainedMarks" type="number" class="w-full border rounded px-2 py-1.5 bg-white text-sm" /></div>
+                <div><label class="block text-xs font-semibold mb-1">Max Marks</label><input name="diplomaMaxMarks" type="number" class="w-full border rounded px-2 py-1.5 bg-white text-sm" /></div>
+              </div>
+            </div>
+
+            <!-- DEGREE (Shown for PG: MBA, MCA, M.Tech) -->
+            <div id="degree-section" class="hidden border border-slate-200 rounded p-3 bg-slate-50">
+              <h4 class="text-sm font-bold text-slate-800 mb-2">Bachelor's Degree / Equivalent (For MBA / MCA / M.Tech) *</h4>
+              <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                <div><label class="block text-xs font-semibold mb-1">University Reg. No *</label><input id="degreeRegNo" name="degreeRegNo" type="text" class="w-full border rounded px-2 py-1.5 bg-white text-sm" /></div>
+                <div><label class="block text-xs font-semibold mb-1">Passing Month/Yr *</label><input id="degreePassMonthYear" name="degreePassMonthYear" type="text" class="w-full border rounded px-2 py-1.5 bg-white text-sm" /></div>
+                <div><label class="block text-xs font-semibold mb-1">Obtained Marks *</label><input id="degreeObtainedMarks" name="degreeObtainedMarks" type="number" class="w-full border rounded px-2 py-1.5 bg-white text-sm" /></div>
+                <div><label class="block text-xs font-semibold mb-1">Max Marks *</label><input id="degreeMaxMarks" name="degreeMaxMarks" type="number" class="w-full border rounded px-2 py-1.5 bg-white text-sm" /></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- STEP 5: QUOTA CLAIMS, DOCUMENT UPLOADS & SSP -->
+          <div class="form-step hidden space-y-5" data-step="5">
+            <h3 class="text-base font-bold text-blue-900 border-b pb-1">6. Special Quotas, Document Uploads &amp; SSP Scholarship</h3>
+
+            <!-- QUOTA FLAGS -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-blue-50 p-3 rounded border border-blue-200">
+              <div>
+                <label class="block text-xs font-bold text-blue-950 mb-1">Claiming HK-371J (Hyderabad Karnataka) Quota? *</label>
+                <select id="hk371jClaim" name="hk371jClaim" class="w-full border rounded px-2.5 py-1.5 bg-white text-sm">
+                  <option value="No">No</option>
+                  <option value="Yes">Yes</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-blue-950 mb-1">Claiming Kannada Medium Quota? *</label>
+                <select id="kannadaMedClaim" name="kannadaMedClaim" class="w-full border rounded px-2.5 py-1.5 bg-white text-sm">
+                  <option value="No">No</option>
+                  <option value="Yes">Yes</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-blue-950 mb-1">Claiming Caste Reservation Quota? *</label>
+                <select id="casteResClaim" name="casteResClaim" class="w-full border rounded px-2.5 py-1.5 bg-white text-sm">
+                  <option value="No">No</option>
+                  <option value="Yes">Yes</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- MOBILE CAMERA SCANNER QUICK-LAUNCH BAR -->
+            <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h4 class="text-sm font-bold text-indigo-950 flex items-center gap-1.5">
+                  <span aria-hidden="true">&#128247;</span> Scan Document with Phone Camera
+                </h4>
+                <p class="text-xs text-indigo-900 mt-0.5">
+                  Place your marks card or certificate on a flat, well-lit surface. Our scanner automatically compresses it to meet VTU (&lt;2 MB) rules.
+                </p>
+              </div>
+              <div class="flex flex-wrap items-center gap-2 shrink-0">
+                <label for="quick-scan-doc-select" class="sr-only">Choose document to scan</label>
+                <select id="quick-scan-doc-select" aria-label="Choose document type to scan"
+                  class="border border-indigo-300 rounded-lg px-3 py-2.5 text-xs font-semibold bg-white text-slate-900 min-h-[44px]">
+                  <option value="sslcCard">SSLC / 10th Marks Card</option>
+                  <option value="pucCard">PUC / XII Marks Card</option>
+                  <option value="degreeCard">Degree Marks Card (PG)</option>
+                  <option value="allotmentLetter">Allotment Letter</option>
+                  <option value="studyCert">Study Certificate</option>
+                  <option value="feeReceipt">Fee Receipt</option>
+                  <option value="tc">Transfer Certificate (TC)</option>
+                  <option value="rankCard">Entrance Rank Card</option>
+                  <option value="aadharCopy">Aadhar Card Copy</option>
+                  <option value="photo">Student Photo</option>
+                  <option value="signature">Student Signature</option>
+                </select>
+                <button type="button" id="open-camera-scanner-btn"
+                  aria-label="Scan selected document with camera"
+                  class="px-4 py-2.5 min-h-[44px] rounded-lg bg-indigo-900 text-white text-xs font-bold hover:bg-indigo-800 shadow-sm cursor-pointer flex items-center gap-1.5">
+                  <span aria-hidden="true">&#128247;</span> Scan Document with Camera
+                </button>
+              </div>
+            </div>
+
+            <!-- DOCUMENT UPLOAD GRID -->
+            <div>
+              <p class="text-xs text-slate-600 mb-3">
+                <strong>Upload Rules:</strong> Student Photo &amp; Signature accept JPEG/PNG (auto-normalized to 200 DPI JPEG &lt;2MB). Certificates &amp; Marks Cards accept JPEG/PNG/PDF (auto-normalized to A4 PDF &lt;2MB).
+              </p>
+              <div id="document-upload-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+            </div>
+
+            <!-- SCROLLABLE UPLOADED DOCUMENT VIEWER -->
+            <div class="border border-slate-300 rounded-xl bg-white overflow-hidden shadow-xs">
+              <div class="bg-slate-800 text-white px-4 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h4 class="text-xs sm:text-sm font-bold flex items-center gap-1.5">
+                    <span aria-hidden="true">&#128196;</span> Uploaded Document Viewer
+                  </h4>
+                  <p id="doc-viewer-caption" class="text-[11px] text-slate-300">Select an uploaded document tab or dropdown item to inspect it before submission.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <label for="doc-viewer-select" class="sr-only">Switch uploaded document preview</label>
+                  <select id="doc-viewer-select" aria-label="Switch uploaded document preview"
+                    class="border border-slate-600 rounded px-2.5 py-1.5 text-xs bg-slate-900 text-white font-semibold min-w-[200px]">
+                    <option value="">-- No Documents Uploaded Yet --</option>
+                  </select>
+                </div>
+              </div>
+              <div id="doc-viewer-tabs" role="tablist" aria-label="Uploaded Documents Switcher"
+                class="flex flex-wrap gap-1.5 px-3 py-2 bg-slate-100 border-b border-slate-200"></div>
+              <div id="doc-viewer-viewport" tabindex="0" aria-label="Document Preview Viewport"
+                class="h-80 overflow-y-auto bg-slate-50 p-4 flex flex-col items-center justify-center text-center">
+                <p class="text-xs text-slate-500">No documents uploaded yet. Upload or scan a file above to preview it here.</p>
+              </div>
+            </div>
+
+            <!-- STATE SCHOLARSHIP PORTAL (SSP) -->
+            <div class="border border-slate-200 rounded p-4 bg-slate-50 space-y-3">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <label for="applySsp" class="block text-sm font-bold text-slate-900">Do You Want to Apply for State Scholarship (SSP)? *</label>
+                  <a href="https://ssp.postmatric.karnataka.gov.in/CA/" target="_blank" rel="noreferrer" class="text-xs text-blue-700 underline">
+                    Create SSP ID on Karnataka Post-Matric Portal &rarr;
+                  </a>
+                </div>
+                <select id="applySsp" name="applySsp" class="w-full sm:w-40 border rounded px-3 py-2 bg-white text-sm font-semibold">
+                  <option value="No">No</option>
+                  <option value="Yes">Yes</option>
+                </select>
+              </div>
+              <div id="ssp-id-wrap" class="hidden">
+                <label for="sspId" class="block text-xs font-bold mb-1">SSP ID (Must be exact 11-Digit Number) *</label>
+                <input id="sspId" name="sspId" type="text" maxlength="11" placeholder="e.g., 20261234567" class="w-full sm:w-72 border rounded px-3 py-2 bg-white font-mono" />
+                <p class="error-msg text-xs text-red-600 mt-1 hidden"></p>
+              </div>
+            </div>
+
+            <!-- DECLARATION -->
+            <div class="bg-amber-50 border border-amber-300 rounded p-3 text-xs text-slate-800 space-y-1">
+              <p><strong>Note 1:</strong> This data will be shared with SSP, NAD, and Social Welfare Department for availing government schemes.</p>
+              <p><strong>Note 2:</strong> If any information is found to be incorrect or mismatched with scholarship portals, the student and college will be held responsible.</p>
+              <label class="flex items-start gap-2 pt-2 font-semibold cursor-pointer">
+                <input id="declarationCheck" type="checkbox" required class="mt-0.5" />
+                <span>I agree to the terms &amp; conditions laid down by Visvesvaraya Technological University (VTU), Belagavi.</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- NAVIGATION FOOTER -->
+          <div class="mt-6 pt-4 border-t border-slate-200 flex items-center justify-between">
+            <button type="button" id="prev-btn" class="px-4 py-2 rounded border border-slate-300 bg-white text-slate-700 font-semibold text-sm disabled:opacity-40 cursor-pointer">
+              &larr; Previous
+            </button>
+            <div class="flex gap-3">
+              <button type="button" id="next-btn" class="px-5 py-2 rounded bg-blue-950 text-white font-semibold text-sm hover:bg-blue-900 cursor-pointer">
+                Save &amp; Next &rarr;
+              </button>
+              <button type="button" id="preview-resume-btn" class="hidden px-5 py-2 rounded bg-indigo-900 text-white font-bold text-sm hover:bg-indigo-800 shadow cursor-pointer">
+                Preview
+              </button>
+              <button type="submit" id="submit-btn" class="hidden px-6 py-2 rounded bg-emerald-700 text-white font-bold text-sm hover:bg-emerald-800 shadow cursor-pointer">
+                Submit &amp; Sync to Cloud
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         VIEW 2: GENERATED RESUME PREVIEW (ONE-CLICK PDF & ZIP DOSSIER)
+    ====================================================================== -->
+    <section id="view-resume" class="hidden space-y-4">
+      <div class="bg-emerald-50 border border-emerald-300 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print">
+        <div>
+          <h2 class="text-base font-bold text-emerald-950">Admission Recorded &amp; Verified!</h2>
+          <p id="notification-status-banner" class="text-xs text-emerald-800 mt-0.5"></p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" id="download-pdf-btn" class="px-3.5 py-2 bg-emerald-700 text-white rounded text-xs font-bold hover:bg-emerald-800 cursor-pointer">
+            Download Official PDF
+          </button>
+          <button type="button" id="download-zip-btn" class="px-3.5 py-2 bg-indigo-900 text-white rounded text-xs font-bold hover:bg-indigo-800 cursor-pointer">
+            Download Full Dossier (.ZIP)
+          </button>
+          <button type="button" id="print-resume-btn" class="px-3.5 py-2 bg-blue-950 text-white rounded text-xs font-bold hover:bg-blue-900 cursor-pointer">
+            Print Page
+          </button>
+          <button type="button" id="back-to-form-btn" class="px-3.5 py-2 bg-white border border-slate-300 rounded text-xs font-semibold hover:bg-slate-50 cursor-pointer">
+            New Entry
+          </button>
+        </div>
+      </div>
+
+      <!-- PRINTABLE A4 RESUME SHEET -->
+      <div id="printable-resume" class="bg-white p-6 sm:p-8 rounded-xl shadow border border-slate-300 max-w-4xl mx-auto text-xs"></div>
+    </section>
+
+    <!-- =====================================================================
+         VIEW 3: STUDENT SELF-SERVICE TRACK & REPRINT LOOKUP
+    ====================================================================== -->
+    <section id="view-track" class="hidden">
+      <div class="max-w-lg mx-auto bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+        <div>
+          <h2 class="text-lg font-bold text-blue-950">Track &amp; Reprint Admission Resume</h2>
+          <p class="text-xs text-slate-500">Enter your Admission ID or Entrance Seat Number along with Date of Birth.</p>
+        </div>
+        <form id="track-lookup-form" class="space-y-3 text-sm">
+          <div>
+            <label for="trackQueryId" class="block text-xs font-semibold mb-1">Admission ID or Entrance Seat Number *</label>
+            <input id="trackQueryId" type="text" required placeholder="e.g., 2026001837 or 26UGEAK485" class="w-full border rounded px-3 py-2 uppercase" />
+          </div>
+          <div>
+            <label for="trackDob" class="block text-xs font-semibold mb-1">Date of Birth *</label>
+            <input id="trackDob" type="date" required class="w-full border rounded px-3 py-2" />
+          </div>
+          <p id="track-error" class="text-xs text-red-600 hidden"></p>
+          <button type="submit" class="w-full py-2 bg-blue-950 text-white font-bold rounded text-sm hover:bg-blue-900 cursor-pointer">
+            Retrieve Admission Resume
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         VIEW 4: STAFF / ADMIN PORTAL (SEAT MATRIX, RBAC, EDIT & AUDIT LOG)
+    ====================================================================== -->
+    <section id="view-admin" class="hidden space-y-6">
+      <!-- STAFF LOGIN CARD -->
+      <div id="admin-login-box" class="max-w-md mx-auto bg-white p-6 rounded-xl shadow border border-slate-200">
+        <h2 class="text-lg font-bold text-blue-950 mb-1">Admission Staff Login</h2>
+        <p class="text-xs text-slate-500 mb-4">Role-Based Access Control (Admin / Admission Officer / Viewer)</p>
+        <form id="admin-login-form" class="space-y-3">
+          <div>
+            <label for="staffRoleSelect" class="block text-xs font-semibold mb-1">Select Staff Role</label>
+            <select id="staffRoleSelect" class="w-full border rounded px-3 py-2 text-sm bg-white">
+              <option value="ADMIN">ADMIN (Full Edit + Resend + Audit Access)</option>
+              <option value="ADMISSION_OFFICER">ADMISSION_OFFICER (Edit + Regenerate PDF)</option>
+              <option value="VIEWER">VIEWER (Read-Only Branch Listings)</option>
+            </select>
+          </div>
+          <div>
+            <label for="staffUser" class="block text-xs font-semibold mb-1">Staff Username</label>
+            <input id="staffUser" type="text" value="officer_jce" required class="w-full border rounded px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label for="staffPass" class="block text-xs font-semibold mb-1">Passcode</label>
+            <input id="staffPass" type="password" value="JCE@2026" required class="w-full border rounded px-3 py-2 text-sm" />
+          </div>
+          <button type="submit" class="w-full py-2 bg-blue-950 text-white font-bold rounded text-sm hover:bg-blue-900 cursor-pointer">
+            Sign In to Dashboard
+          </button>
+        </form>
+      </div>
+
+      <!-- AUTHENTICATED ADMIN DASHBOARD -->
+      <div id="admin-dashboard" class="hidden space-y-6">
+        <!-- HEADER & FILTERS -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-bold text-blue-950">Admissions System of Record &amp; Branch Seat Matrix</h2>
+            <p id="staff-session-badge" class="text-xs text-slate-600"></p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <input id="search-student-input" type="text" placeholder="Search Name / ID / Seat..." class="border rounded px-2.5 py-1.5 text-xs bg-white w-48" />
+            <select id="filter-course" class="border rounded px-2.5 py-1.5 text-xs bg-white font-semibold">
+              <option value="ALL">All Courses</option>
+              <option value="BE">B.E.</option>
+              <option value="MBA">MBA</option>
+              <option value="MCA">MCA</option>
+              <option value="M.Tech">M.Tech</option>
+            </select>
+            <button type="button" id="pull-cloud-btn" class="px-3 py-1.5 bg-blue-800 text-white rounded text-xs font-semibold cursor-pointer">
+              Sync From Google Sheet
+            </button>
+            <button type="button" id="export-csv-btn" class="px-3 py-1.5 bg-emerald-700 text-white rounded text-xs font-semibold cursor-pointer">
+              Export CSV
+            </button>
+            <button type="button" id="admin-logout-btn" class="px-3 py-1.5 bg-slate-200 text-slate-800 rounded text-xs font-semibold cursor-pointer">
+              Logout
+            </button>
+          </div>
+        </div>
+
+        <!-- LIVE SEAT MATRIX & QUOTA ANALYTICS -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b pb-2">
+            <h3 class="text-sm font-bold text-blue-950">2026–27 Sanctioned Intake vs. Admitted Seat Matrix</h3>
+            <div id="quota-summary-pills" class="flex flex-wrap gap-2 text-[11px] font-semibold"></div>
+          </div>
+          <div id="seat-matrix-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
+        </div>
+
+        <!-- ADMITTED STUDENTS TABLE (WITH MASKED ID & ZIP DOSSIER) -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-blue-950 text-white">
+                <th class="p-3">Admission ID</th>
+                <th class="p-3">Candidate Name</th>
+                <th class="p-3">Course / Branch</th>
+                <th class="p-3">Mode / Rank</th>
+                <th class="p-3">Category</th>
+                <th class="p-3">Masked ID</th>
+                <th class="p-3">Drive Folder</th>
+                <th class="p-3">Notifications</th>
+                <th class="p-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="admin-student-tbody" class="divide-y divide-slate-200"></tbody>
+          </table>
+        </div>
+
+        <!-- AUDIT TRAIL LOG TABLE -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+          <h3 class="text-sm font-bold text-blue-950 mb-2">Immutable Field-Level Audit Log</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-100 text-slate-700 border-b">
+                  <th class="p-2">Timestamp</th>
+                  <th class="p-2">Admission ID</th>
+                  <th class="p-2">Staff User</th>
+                  <th class="p-2">Field Changed</th>
+                  <th class="p-2">Old Value</th>
+                  <th class="p-2">New Value</th>
+                </tr>
+              </thead>
+              <tbody id="audit-log-tbody" class="divide-y divide-slate-200"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAFF EDIT MODAL -->
+    <div id="edit-modal" role="dialog" aria-modal="true" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-xl max-w-lg w-full p-6 space-y-4 shadow-xl">
+        <h3 class="text-lg font-bold text-blue-950">Edit Student Record (<span id="edit-modal-id"></span>)</h3>
+        <form id="edit-record-form" class="space-y-3 text-xs">
+          <input type="hidden" id="edit-admission-id" />
+          <div>
+            <label class="block font-semibold mb-1">Candidate Name (10th Marks Card)</label>
+            <input id="edit-name" type="text" required class="w-full border rounded px-3 py-2 uppercase" />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-semibold mb-1">Branch</label>
+              <input id="edit-branch" type="text" required class="w-full border rounded px-3 py-2 uppercase" />
+            </div>
+            <div>
+              <label class="block font-semibold mb-1">Allotted Category</label>
+              <input id="edit-category" type="text" required class="w-full border rounded px-3 py-2 uppercase" />
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-semibold mb-1">Entrance Rank</label>
+              <input id="edit-rank" type="number" required class="w-full border rounded px-3 py-2" />
+            </div>
+            <div>
+              <label class="block font-semibold mb-1">Mobile Number</label>
+              <input id="edit-mobile" type="tel" maxlength="10" required class="w-full border rounded px-3 py-2" />
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-semibold mb-1">SSP Scholarship ID (11 digits)</label>
+              <input id="edit-ssp" type="text" maxlength="11" class="w-full border rounded px-3 py-2 font-mono" />
+            </div>
+            <div>
+              <label class="block font-semibold mb-1">Caste</label>
+              <input id="edit-caste" type="text" class="w-full border rounded px-3 py-2" />
+            </div>
+          </div>
+          <label class="flex items-center gap-2 pt-1 font-semibold text-blue-900">
+            <input type="checkbox" id="edit-resend-check" checked />
+            Regenerate PDF &amp; Resend Updated Copy via Email &amp; WhatsApp
+          </label>
+          <div class="flex justify-end gap-2 pt-3 border-t">
+            <button type="button" id="cancel-edit-btn" class="px-4 py-2 border rounded font-semibold cursor-pointer">Cancel</button>
+            <button type="submit" class="px-4 py-2 bg-blue-950 text-white rounded font-bold cursor-pointer">Save Changes &amp; Sync</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- GOOGLE APPS SCRIPT CONFIGURATION MODAL -->
+    <div id="gas-modal" role="dialog" aria-modal="true" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-xl max-w-2xl w-full p-6 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between border-b pb-2">
+          <h3 class="text-base font-bold text-blue-950">Google Apps Script Cloud Sync Setup</h3>
+          <button type="button" id="close-gas-modal-btn" class="text-slate-500 hover:text-slate-900 font-bold text-lg cursor-pointer">&times;</button>
+        </div>
+        <div class="space-y-3 text-xs">
+          <p class="text-slate-600">
+            Paste your deployed Google Apps Script Web App URL below to enable live syncing to Google Sheets, automatic Google Drive branch folders, and Gmail API receipts.
+          </p>
+          <div>
+            <label for="gas-url-input" class="block font-semibold mb-1">Apps Script Web App URL (<code>https://script.google.com/macros/s/.../exec</code>)</label>
+            <div class="flex gap-2">
+              <input id="gas-url-input" type="url" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="flex-grow border rounded px-3 py-2 font-mono text-xs" />
+              <button type="button" id="save-gas-url-btn" class="px-4 py-2 bg-blue-950 text-white rounded font-bold cursor-pointer">Save URL</button>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="font-bold text-slate-800">Ready-to-Deploy <code>Code.gs</code> (Paste into Google Apps Script)</span>
+              <button type="button" id="copy-gas-code-btn" class="text-blue-700 font-semibold hover:underline cursor-pointer">Copy Code.gs</button>
+            </div>
+            <pre id="gas-code-block" class="bg-slate-900 text-emerald-300 p-3 rounded text-[11px] overflow-x-auto leading-relaxed">const ROOT_FOLDER_ID = 'PASTE_YOUR_GOOGLE_DRIVE_FOLDER_ID_HERE';
+const SPREADSHEET_ID = 'PASTE_YOUR_GOOGLE_SPREADSHEET_ID_HERE';
+
+const HEADERS = [
+  'Admission_ID', 'Submitted_At', 'programme', 'course', 'branch',
+  'candidateName10th', 'candidateNameId', 'fatherName', 'motherName',
+  'gender', 'dob', 'nationality', 'stateCountry', 'religion', 'idType', 'idNumber',
+  'mobile', 'whatsappMobile', 'email', 'parentOccupation', 'cityType',
+  'currentAddress', 'ownerPrincipalName', 'ownerPrincipalMobile',
+  'permanentAddress', 'correspondenceAddress', 'admissionDate', 'admissionMode',
+  'joiningSemester', 'seatNumber', 'rank', 'seatType', 'actualCategory',
+  'allottedCategory', 'caste', 'otherReservation', 'sslcStudiedInKA', 'sslcState',
+  'sslcBoard', 'sslcOtherBoard', 'sslcRegNo', 'sslcPassMonthYear',
+  'sslcObtainedMarks', 'sslcMaxMarks', 'pucStudiedInKA', 'pucState', 'pucBoard',
+  'pucOtherBoard', 'pucRegNo', 'pucPassMonthYear', 'pucObtainedMarks', 'pucMaxMarks',
+  'sub1Marks', 'sub2Marks', 'sub3Marks', 'pcmTotal', 'pcmAvg', 'mediumOfInstruction',
+  'diplomaRegNo', 'diplomaPassMonthYear', 'diplomaObtainedMarks', 'diplomaMaxMarks',
+  'degreeRegNo', 'degreePassMonthYear', 'degreeObtainedMarks', 'degreeMaxMarks',
+  'hk371jClaim', 'kannadaMedClaim', 'casteResClaim', 'applySsp', 'sspId',
+  'driveFolderPath', 'emailStatus', 'whatsAppStatus', 'docLinksJson'
+];
+
+function doPost(e) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const payload = JSON.parse(e.postData.contents);
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const master = getOrCreateSheet_(ss, 'Master_Admissions', HEADERS);
+
+    const root = DriveApp.getFolderById(ROOT_FOLDER_ID);
+    const yFolder = getOrCreateFolder_(root, 'Admissions2026');
+    const cFolder = getOrCreateFolder_(yFolder, payload.course);
+    const bFolder = getOrCreateFolder_(cFolder, payload.branch);
+    const sFolder = getOrCreateFolder_(bFolder, payload.candidateName10th + '_' + payload.Admission_ID);
+
+    const docLinks = {};
+    if (payload.docs) {
+      Object.keys(payload.docs).forEach(key =&gt; {
+        const doc = payload.docs[key];
+        if (doc &amp;&amp; doc.dataUrl &amp;&amp; doc.dataUrl.startsWith('data:')) {
+          const base64 = doc.dataUrl.split(',')[1];
+          const mime = doc.dataUrl.split(';')[0].split(':')[1];
+          const blob = Utilities.newBlob(Utilities.base64Decode(base64), mime, doc.name);
+          const file = sFolder.createFile(blob);
+          docLinks[key] = file.getUrl();
+        }
+      });
+    }
+
+    payload.driveFolderPath = sFolder.getUrl();
+    payload.docLinksJson = JSON.stringify(docLinks);
+
+    const data = master.getDataRange().getValues();
+    let existingRowIndex = -1;
+    for (let i = 1; i &lt; data.length; i++) {
+      if (String(data[i][0]) === String(payload.Admission_ID)) {
+        existingRowIndex = i + 1;
+        break;
+      }
+    }
+
+    const rowValues = HEADERS.map(h =&gt; payload[h] !== undefined ? payload[h] : '');
+    if (existingRowIndex &gt; 1) {
+      master.getRange(existingRowIndex, 1, 1, HEADERS.length).setValues([rowValues]);
+    } else {
+      master.appendRow(rowValues);
+    }
+
+    const branchTabName = (payload.course + '_' + payload.branch).replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 30);
+    const branchSheet = getOrCreateSheet_(ss, branchTabName, HEADERS);
+    if (existingRowIndex === -1) branchSheet.appendRow(rowValues);
+
+    if (payload.auditEntries &amp;&amp; payload.auditEntries.length &gt; 0) {
+      const auditSheet = getOrCreateSheet_(ss, 'Audit_Log', ['Timestamp', 'Admission_ID', 'Staff_User', 'Field', 'Old_Value', 'New_Value']);
+      payload.auditEntries.forEach(a =&gt; {
+        auditSheet.appendRow([a.timestamp, a.admissionId, a.staffUser, a.field, a.oldVal, a.newVal]);
+      });
+    }
+
+    if (payload.email &amp;&amp; existingRowIndex === -1) {
+      MailApp.sendEmail({
+        to: payload.email,
+        subject: 'Admission Confirmation - ' + payload.Admission_ID + ' (' + payload.candidateName10th + ')',
+        body: 'Dear ' + payload.candidateName10th + ',\n\nYour admission for ' + payload.course +
+              ' (' + payload.branch + ') is confirmed.\nAdmission ID: ' + payload.Admission_ID +
+              '\nDocument Folder: ' + sFolder.getUrl()
+      });
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({
+      status: 'OK',
+      driveUrl: sFolder.getUrl(),
+      docLinks: docLinks
+    })).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: 'ERROR', message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function doGet() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName('Master_Admissions');
+  if (!sheet || sheet.getLastRow() &lt; 2) {
+    return ContentService.createTextOutput(JSON.stringify({ status: 'OK', records: [] }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+  const values = sheet.getDataRange().getValues();
+  const headers = values[0];
+  const records = values.slice(1).map(row =&gt; {
+    const obj = {};
+    headers.forEach((h, idx) =&gt; { obj[h] = row[idx]; });
+    return obj;
+  });
+  return ContentService.createTextOutput(JSON.stringify({ status: 'OK', records: records }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function getOrCreateFolder_(parent, name) {
+  const clean = String(name).replace(/[/\\?%*:|"&lt;&gt;]/g, '-').trim();
+  const it = parent.getFoldersByName(clean);
+  return it.hasNext() ? it.next() : parent.createFolder(clean);
+}
+
+function getOrCreateSheet_(ss, name, headers) {
+  let sheet = ss.getSheetByName(name);
+  if (!sheet) {
+    sheet = ss.insertSheet(name);
+    sheet.appendRow(headers);
+  }
+  return sheet;
+}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MOBILE CAMERA DOCUMENT SCANNER MODAL -->
+    <div id="camera-scanner-modal" role="dialog" aria-modal="true" aria-labelledby="scanner-modal-title"
+      class="hidden fixed inset-0 bg-slate-950/90 flex items-center justify-center p-3 sm:p-4 z-50">
+      <div class="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl flex flex-col max-h-[95vh]">
+        <!-- Modal Header -->
+        <div class="bg-blue-950 text-white px-4 py-3 flex items-center justify-between">
+          <div>
+            <h3 id="scanner-modal-title" class="text-sm sm:text-base font-bold">Scan Document</h3>
+            <p id="scanner-target-label" class="text-xs text-blue-200">Align document inside the green corners</p>
+          </div>
+          <button type="button" id="close-scanner-modal-btn" aria-label="Close document scanner"
+            class="w-10 h-10 rounded-lg bg-blue-900 hover:bg-blue-800 text-white font-bold text-lg flex items-center justify-center cursor-pointer">
+            &times;
+          </button>
+        </div>
+
+        <!-- Plain-Language Instructions & Live Status -->
+        <div class="px-4 py-2.5 bg-slate-50 border-b border-slate-200 text-xs text-slate-700">
+          <p id="scanner-instruction-text">
+            Hold your phone steady directly above the document. Keep all four edges inside the frame.
+          </p>
+          <p id="scanner-feedback-msg" role="status" aria-live="polite" class="mt-1 font-semibold hidden"></p>
+        </div>
+
+        <!-- Viewfinder / Captured Preview Stage -->
+        <div class="relative bg-slate-900 flex-grow flex items-center justify-center overflow-hidden min-h-[300px] sm:min-h-[360px]">
+          <!-- Live Video Stream -->
+          <video id="scanner-video" autoplay playsinline muted class="w-full h-full object-cover"></video>
+
+          <!-- On-Screen Alignment Frame -->
+          <div id="scanner-overlay-guide" aria-hidden="true"
+            class="scanner-guide-frame w-4/5 h-4/5 pointer-events-none flex items-center justify-center">
+            <span class="scanner-corner tl"></span>
+            <span class="scanner-corner tr"></span>
+            <span class="scanner-corner bl"></span>
+            <span class="scanner-corner br"></span>
+            <span class="text-white/90 text-xs font-semibold bg-slate-900/70 px-2.5 py-1 rounded">
+              Align Document Edges Here
+            </span>
+          </div>
+
+          <!-- Captured Image Preview (Hidden until photo is snapped) -->
+          <img id="scanner-preview-img" alt="Captured document preview" class="hidden max-h-[380px] w-auto object-contain p-2" />
+        </div>
+
+        <!-- Native Mobile Rear-Camera / Gallery Fallback Input -->
+        <input id="native-camera-capture-input" type="file" accept="image/*" capture="environment" class="hidden" />
+
+        <!-- Large Touch-Friendly Action Controls -->
+        <div class="p-4 bg-white border-t border-slate-200 space-y-2">
+          <!-- Controls during Live Viewfinder -->
+          <div id="scanner-live-controls" class="flex flex-col sm:flex-row gap-2">
+            <button type="button" id="snap-photo-btn"
+              class="flex-1 min-h-[48px] px-4 py-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm shadow cursor-pointer">
+              &#128248; Capture Photo
+            </button>
+            <button type="button" id="fallback-native-camera-btn"
+              class="min-h-[48px] px-4 py-3 rounded-xl border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs cursor-pointer">
+              Use Phone Camera App / Gallery
+            </button>
+          </div>
+
+          <!-- Controls after Capture (Retake vs. Confirm) -->
+          <div id="scanner-review-controls" class="hidden flex flex-col sm:flex-row gap-2">
+            <button type="button" id="retake-photo-btn"
+              class="flex-1 min-h-[48px] px-4 py-3 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-800 font-bold text-sm cursor-pointer">
+              &#8634; Retake Photo
+            </button>
+            <button type="button" id="confirm-scan-btn"
+              class="flex-1 min-h-[48px] px-4 py-3 rounded-xl bg-blue-950 hover:bg-blue-900 text-white font-bold text-sm shadow cursor-pointer">
+              &#10003; Confirm &amp; Upload Document
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRE-SUBMISSION ADMISSION RESUME PREVIEW MODAL -->
+    <div id="pre-submit-preview-modal" role="dialog" aria-modal="true" aria-labelledby="pre-submit-modal-title"
+      class="hidden fixed inset-0 bg-slate-950/80 flex items-center justify-center p-3 sm:p-5 z-50">
+      <div class="bg-white rounded-2xl max-w-5xl w-full overflow-hidden shadow-2xl flex flex-col max-h-[94vh]">
+        <div class="bg-blue-950 text-white px-5 py-3.5 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 id="pre-submit-modal-title" class="text-sm sm:text-base font-bold">Pre-Submission Official Admission Resume Preview</h3>
+            <p class="text-xs text-blue-200">Review all entered details and attached documents below. Nothing has been submitted or synced yet.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" id="download-draft-pdf-btn"
+              class="px-3.5 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold cursor-pointer">
+              Download Preview PDF
+            </button>
+            <button type="button" id="close-pre-submit-modal-btn" aria-label="Close resume preview"
+              class="px-3.5 py-2 rounded-lg bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold cursor-pointer">
+              Back to Edit
+            </button>
+          </div>
+        </div>
+        <div class="p-4 sm:p-6 overflow-y-auto bg-slate-100 flex-grow">
+          <div id="pre-submit-resume-container" class="bg-white p-6 sm:p-8 rounded-xl shadow border border-slate-300 max-w-4xl mx-auto text-xs"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="bg-slate-900 text-slate-400 text-xs py-4 text-center no-print">
+    &copy; 2026 Jain College of Engineering, Belagavi &bull; Affiliated to Visvesvaraya Technological University (VTU), Belagavi
+  </footer>
+
+  <!-- =====================================================================
+       APPLICATION LOGIC (APPS SCRIPT SYNC, PDF/ZIP EXPORT, SEAT MATRIX, RBAC, CAMERA SCANNER)
+  ====================================================================== -->
+  <script>
+    (function () {
+      const COURSE_CONFIG = {
+        BE: {
+          programme: 'UG',
+          branches: [
+            { name: 'COMPUTER SCIENCE & ENGINEERING', intake: 180 },
+            { name: 'ELECTRONICS & COMMUNICATION ENGINEERING', intake: 120 },
+            { name: 'ELECTRICAL & ELECTRONICS ENGINEERING', intake: 60 },
+            { name: 'MECHANICAL ENGINEERING', intake: 60 },
+            { name: 'CIVIL ENGINEERING', intake: 60 },
+            { name: 'ARTIFICIAL INTELLIGENCE & MACHINE LEARNING', intake: 60 }
+          ]
+        },
+        MBA: {
+          programme: 'PG',
+          branches: [
+            { name: 'MASTER OF BUSINESS ADMINISTRATION', intake: 120 }
+          ]
+        },
+        MCA: {
+          programme: 'PG',
+          branches: [
+            { name: 'MASTER OF COMPUTER APPLICATIONS', intake: 120 }
+          ]
+        },
+        'M.Tech': {
+          programme: 'PG',
+          branches: [
+            { name: 'STRUCTURAL ENGINEERING', intake: 18 },
+            { name: 'COMPUTER SCIENCE & ENGINEERING', intake: 18 },
+            { name: 'DIGITAL ELECTRONICS & COMMUNICATION', intake: 18 }
+          ]
+        }
+      };
+
+      const STEP_LABELS = [
+        '1. Course',
+        '2. Personal',
+        '3. Contact',
+        '4. Admission',
+        '5. Marks',
+        '6. Docs & SSP'
+      ];
+
+      const REQUIRED_DOCS = [
+        { key: 'photo', label: 'Student Photo (JPEG)', type: 'JPG', required: true },
+        { key: 'signature', label: 'Student Signature (JPEG)', type: 'JPG', required: true },
+        { key: 'sslcCard', label: 'SSLC / 10th Marks Card', type: 'PDF', required: true },
+        { key: 'pucCard', label: 'PUC / XII Marks Card', type: 'PDF', required: false },
+        { key: 'degreeCard', label: 'Degree Marks Card (PG)', type: 'PDF', required: false },
+        { key: 'allotmentLetter', label: 'KEA / COMED-K Allotment Letter', type: 'PDF', required: true },
+        { key: 'studyCert', label: 'Study Certificate', type: 'PDF', required: true },
+        { key: 'feeReceipt', label: 'Fee Receipt', type: 'PDF', required: true },
+        { key: 'tc', label: 'Transfer Certificate (TC)', type: 'PDF', required: true },
+        { key: 'rankCard', label: 'Entrance Rank Card', type: 'PDF', required: true },
+        { key: 'aadharCopy', label: 'Aadhar Card Copy', type: 'PDF', required: true },
+        { key: 'hk371jCert', label: 'HK-371J Certificate', type: 'PDF', required: false, conditional: 'hk371jClaim' },
+        { key: 'kannadaCert', label: 'Kannada Medium Certificate', type: 'PDF', required: false, conditional: 'kannadaMedClaim' },
+        { key: 'casteCert', label: 'Caste / Income Certificate', type: 'PDF', required: false, conditional: 'casteResClaim' }
+      ];
+
+      const STORAGE_KEYS = {
+        DRAFT: 'vtu_portal_2026_draft_v3',
+        RECORDS: 'vtu_portal_2026_records_v3',
+        AUDIT: 'vtu_portal_2026_audit_v3',
+        STAFF: 'vtu_portal_2026_staff_v3',
+        GAS_URL: 'vtu_portal_2026_gas_url'
+      };
+
+      let currentStep = 0;
+      let uploadedDocs = {};
+      let activePreviewRecord = null;
+
+      // --- PHASE 2: HARDCODED ENDPOINT & LIVE REAL-TIME CLOUD SYNC ---
+      // Replace the placeholder URL below with your deployed Google Apps Script Web App URL
+      // so all devices automatically connect without manual setup (can still be overridden in UI).
+      const DEFAULT_GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwqpbNAKoJmmKkH_tDH5ONscCqgaQ9x27F0MprOhYwUYTqfnqi-no52UMhUrbphk4cYfQ/exec';
+      let isCloudPollingInFlight = false;
+      let livePollIntervalId = null;
+
+      function getActiveGasUrl() {
+        const override = (localStorage.getItem(STORAGE_KEYS.GAS_URL) || '').trim();
+        if (override) return override;
+        if (DEFAULT_GAS_WEB_APP_URL && !DEFAULT_GAS_WEB_APP_URL.includes('YOUR_DEPLOYED_SCRIPT_ID')) {
+          return DEFAULT_GAS_WEB_APP_URL;
+        }
+        return '';
+      }
+
+      function updateSyncBanner(lastSyncedTime) {
+        const gasUrl = getActiveGasUrl();
+        const dot = document.getElementById('sync-status-dot');
+        const txt = document.getElementById('sync-status-text');
+        if (gasUrl) {
+          dot.className = 'inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+          const suffix = lastSyncedTime ? ` (Last synced: ${lastSyncedTime})` : ' (Live Auto-Sync Active)';
+          txt.textContent = `Google Apps Script Cloud Sync: CONNECTED${suffix}`;
+        } else {
+          dot.className = 'inline-block w-2 h-2 rounded-full bg-amber-400';
+          txt.textContent = 'Storage Mode: Local Browser (Set DEFAULT_GAS_WEB_APP_URL or click right to link Google Sheets/Drive)';
+        }
+      }
+
+      async function syncRecordToGoogleAppsScript(record) {
+        const gasUrl = getActiveGasUrl();
+        if (!gasUrl) return { synced: false };
+        try {
+          const res = await fetch(gasUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(record)
+          });
+          const json = await res.json();
+          if (json.status === 'OK') {
+            updateSyncBanner(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+          }
+          return { synced: json.status === 'OK', driveUrl: json.driveUrl, docLinks: json.docLinks };
+        } catch (err) {
+          console.warn('Cloud sync fallback to local:', err);
+          return { synced: false };
+        }
+      }
+
+      // Pulls latest records from Google Sheets and merges with local cache for real-time cross-device updates
+      async function fetchLiveCloudRecords(silent = true) {
+        const gasUrl = getActiveGasUrl();
+        if (!gasUrl || isCloudPollingInFlight) return { ok: false, count: 0 };
+        isCloudPollingInFlight = true;
+        try {
+          const res = await fetch(`${gasUrl}?t=${Date.now()}`);
+          const json = await res.json();
+          if (json.status === 'OK' && Array.isArray(json.records)) {
+            const localRecords = JSON.parse(localStorage.getItem(STORAGE_KEYS.RECORDS) || '[]');
+            const mergedMap = new Map();
+            localRecords.forEach(r => mergedMap.set(String(r.Admission_ID), r));
+
+            json.records.forEach(cloudRec => {
+              const id = String(cloudRec.Admission_ID || '').trim();
+              if (!id) return;
+              const existing = mergedMap.get(id) || {};
+              // Normalize DOB if returned as ISO timestamp by Google Sheets
+              let normalizedDob = cloudRec.dob || existing.dob || '';
+              if (typeof normalizedDob === 'string' && normalizedDob.includes('T')) {
+                normalizedDob = normalizedDob.split('T')[0];
+              }
+              mergedMap.set(id, {
+                ...existing,
+                ...cloudRec,
+                Admission_ID: id,
+                dob: normalizedDob,
+                docs: existing.docs || {}
+              });
+            });
+
+            const mergedList = Array.from(mergedMap.values());
+            localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(mergedList));
+            updateSyncBanner(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+
+            if (!document.getElementById('admin-dashboard').classList.contains('hidden')) {
+              renderAdminTable();
+            }
+            return { ok: true, count: json.records.length };
+          }
+          return { ok: false, count: 0 };
+        } catch (err) {
+          if (!silent) console.warn('Cloud fetch failed:', err);
+          return { ok: false, count: 0, error: err.message };
+        } finally {
+          isCloudPollingInFlight = false;
+        }
+      }
+
+      function startLiveAutoPolling() {
+        if (livePollIntervalId) clearInterval(livePollIntervalId);
+        // Immediately sync on startup, then poll every 15 seconds while Admin Dashboard is open
+        fetchLiveCloudRecords(true);
+        livePollIntervalId = setInterval(() => {
+          if (!document.getElementById('admin-dashboard').classList.contains('hidden')) {
+            fetchLiveCloudRecords(true);
+          }
+        }, 15000);
+      }
+
+      // --- SEED PREDEFINED RECORDS (NO REAL AADHAR NUMBERS) ---
+      function seedPredefinedRecords() {
+        const existing = JSON.parse(localStorage.getItem(STORAGE_KEYS.RECORDS) || '[]');
+        if (existing.length > 0) return;
+
+        const predefined = [
+          {
+            Admission_ID: '2026001837',
+            Submitted_At: '2026-08-18T10:30:00Z',
+            programme: 'UG',
+            course: 'BE',
+            branch: 'ELECTRONICS & COMMUNICATION ENGINEERING',
+            candidateName10th: 'AISHWARYA JAGADISH HONAKADE',
+            candidateNameId: 'AISHWARYA JAGADISH HONAKADE',
+            fatherName: 'JAGADISH',
+            motherName: 'SHILA',
+            gender: 'Female',
+            dob: '2008-05-14',
+            nationality: 'Indian',
+            stateCountry: 'Karnataka',
+            religion: 'Hindu',
+            idType: 'Aadhar',
+            idNumber: 'XXXX-XXXX-0001',
+            mobile: '9845012345',
+            whatsappMobile: '9845012345',
+            email: 'aishwarya.h@example.com',
+            parentOccupation: 'Business',
+            cityType: 'Urban',
+            currentAddress: 'Tilakwadi, Belagavi, Karnataka',
+            ownerPrincipalName: 'Jagadish Honakade',
+            ownerPrincipalMobile: '9845012345',
+            permanentAddress: 'Tilakwadi, Belagavi, Karnataka',
+            correspondenceAddress: 'Tilakwadi, Belagavi, Karnataka',
+            admissionDate: '2026-08-18',
+            admissionMode: 'KEA',
+            joiningSemester: '1st Semester',
+            seatNumber: '26UGEAK485',
+            rank: '141637',
+            seatType: 'Government',
+            actualCategory: 'S1G',
+            allottedCategory: 'S1G',
+            caste: 'Chambhar (Group-A)',
+            otherReservation: 'None',
+            sslcStudiedInKA: 'Yes',
+          sslcBoard: 'Karnataka SSLC Board (KSEAB)',
+            sslcBoard: 'Karnataka SSLC Board (KSEAB)',
+            sslcState: 'Karnataka',
+            sslcRegNo: '20240192834',
+            sslcPassMonthYear: 'APR-2024',
+            sslcObtainedMarks: '560',
+            sslcMaxMarks: '625',
+            pucStudiedInKA: 'Yes',
+            pucBoard: 'Karnataka PU Board',
+            pucRegNo: '782341',
+            pucPassMonthYear: 'MAR-2026',
+            pucObtainedMarks: '512',
+            pucMaxMarks: '600',
+            sub1Marks: '89',
+            sub2Marks: '81',
+            sub3Marks: '76',
+            pcmTotal: '246',
+            pcmAvg: '82.00',
+            mediumOfInstruction: 'English',
+            hk371jClaim: 'No',
+            kannadaMedClaim: 'No',
+            casteResClaim: 'Yes',
+            applySsp: 'Yes',
+            sspId: '20260018371',
+            driveFolderPath: '/Admissions2026/BE/ELECTRONICS_COMMUNICATION_ENGINEERING/AISHWARYA_JAGADISH_HONAKADE_2026001837/',
+            emailStatus: 'SENT',
+            whatsAppStatus: 'DELIVERED',
+            docs: {}
+          },
+          {
+            Admission_ID: '2026001838',
+            Submitted_At: '2026-08-19T11:15:00Z',
+            programme: 'UG',
+            course: 'BE',
+            branch: 'COMPUTER SCIENCE & ENGINEERING',
+            candidateName10th: 'ROHAN SURESH PATIL',
+            candidateNameId: 'ROHAN SURESH PATIL',
+            fatherName: 'SURESH PATIL',
+            motherName: 'SUNITA PATIL',
+            gender: 'Male',
+            dob: '2008-03-22',
+            nationality: 'Indian',
+            stateCountry: 'Karnataka',
+            religion: 'Hindu',
+            idType: 'Aadhar',
+            idNumber: 'XXXX-XXXX-0002',
+            mobile: '9900112233',
+            whatsappMobile: '9900112233',
+            email: 'rohan.patil@example.com',
+            parentOccupation: 'Government Service',
+            cityType: 'Urban',
+            currentAddress: 'Hanuman Nagar, Belagavi, Karnataka',
+            ownerPrincipalName: 'Suresh Patil',
+            ownerPrincipalMobile: '9900112233',
+            permanentAddress: 'Hanuman Nagar, Belagavi, Karnataka',
+            correspondenceAddress: 'Hanuman Nagar, Belagavi, Karnataka',
+            admissionDate: '2026-08-19',
+            admissionMode: 'KEA',
+            joiningSemester: '1st Semester',
+            seatNumber: '26UGEAK102',
+            rank: '28450',
+            seatType: 'Government',
+            actualCategory: '3BG',
+            allottedCategory: 'GM',
+            caste: 'Lingayat',
+            otherReservation: 'None',
+            sslcStudiedInKA: 'Yes',
+          sslcBoard: 'Karnataka SSLC Board (KSEAB)',
+            sslcBoard: 'Karnataka SSLC Board (KSEAB)',
+            sslcState: 'Karnataka',
+            sslcRegNo: '20240284910',
+            sslcPassMonthYear: 'APR-2024',
+            sslcObtainedMarks: '598',
+            sslcMaxMarks: '625',
+            pucStudiedInKA: 'Yes',
+            pucBoard: 'Karnataka PU Board',
+            pucRegNo: '891245',
+            pucPassMonthYear: 'MAR-2026',
+            pucObtainedMarks: '568',
+            pucMaxMarks: '600',
+            sub1Marks: '95',
+            sub2Marks: '92',
+            sub3Marks: '97',
+            pcmTotal: '284',
+            pcmAvg: '94.67',
+            mediumOfInstruction: 'English',
+            hk371jClaim: 'No',
+            kannadaMedClaim: 'No',
+            casteResClaim: 'No',
+            applySsp: 'No',
+            sspId: '',
+            driveFolderPath: '/Admissions2026/BE/COMPUTER_SCIENCE_ENGINEERING/ROHAN_SURESH_PATIL_2026001838/',
+            emailStatus: 'SENT',
+            whatsAppStatus: 'DELIVERED',
+            docs: {}
+          },
+          {
+            Admission_ID: '2026001839',
+            Submitted_At: '2026-08-20T09:45:00Z',
+            programme: 'PG',
+            course: 'MCA',
+            branch: 'MASTER OF COMPUTER APPLICATIONS',
+            candidateName10th: 'SNEHA PRAKASH KULKARNI',
+            candidateNameId: 'SNEHA PRAKASH KULKARNI',
+            fatherName: 'PRAKASH KULKARNI',
+            motherName: 'ANITA KULKARNI',
+            gender: 'Female',
+            dob: '2004-11-09',
+            nationality: 'Indian',
+            stateCountry: 'Karnataka',
+            religion: 'Hindu',
+            idType: 'Aadhar',
+            idNumber: 'XXXX-XXXX-0003',
+            mobile: '9880445566',
+            whatsappMobile: '9880445566',
+            email: 'sneha.k@example.com',
+            parentOccupation: 'Teaching / Academic',
+            cityType: 'Urban',
+            currentAddress: 'Sadashiv Nagar, Belagavi, Karnataka',
+            ownerPrincipalName: 'Prakash Kulkarni',
+            ownerPrincipalMobile: '9880445566',
+            permanentAddress: 'Sadashiv Nagar, Belagavi, Karnataka',
+            correspondenceAddress: 'Sadashiv Nagar, Belagavi, Karnataka',
+            admissionDate: '2026-08-20',
+            admissionMode: 'KEA',
+            joiningSemester: '1st Semester',
+            seatNumber: '26PGMCA319',
+            rank: '4120',
+            seatType: 'Government',
+            actualCategory: 'GM',
+            allottedCategory: 'GM',
+            caste: 'Brahmin',
+            otherReservation: 'None',
+            sslcStudiedInKA: 'Yes',
+          sslcBoard: 'Karnataka SSLC Board (KSEAB)',
+            sslcBoard: 'Karnataka SSLC Board (KSEAB)',
+            sslcState: 'Karnataka',
+            sslcRegNo: '20200451289',
+            sslcPassMonthYear: 'JUN-2020',
+            sslcObtainedMarks: '575',
+            sslcMaxMarks: '625',
+            degreeRegNo: 'U15BC23S0042',
+            degreePassMonthYear: 'JUL-2026',
+            degreeObtainedMarks: '2140',
+            degreeMaxMarks: '2400',
+            mediumOfInstruction: 'English',
+            hk371jClaim: 'No',
+            kannadaMedClaim: 'No',
+            casteResClaim: 'No',
+            applySsp: 'No',
+            sspId: '',
+            driveFolderPath: '/Admissions2026/MCA/MASTER_OF_COMPUTER_APPLICATIONS/SNEHA_PRAKASH_KULKARNI_2026001839/',
+            emailStatus: 'SENT',
+            whatsAppStatus: 'DELIVERED',
+            docs: {}
+          }
+        ];
+
+        localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(predefined));
+      }
+
+      // --- NAVIGATION ---
+      function switchView(view) {
+        ['student', 'resume', 'track', 'admin'].forEach(v => {
+          document.getElementById(`view-${v}`).classList.add('hidden');
+        });
+        document.getElementById(`view-${view}`).classList.remove('hidden');
+
+        const tabs = {
+          student: document.getElementById('nav-student-btn'),
+          track: document.getElementById('nav-track-btn'),
+          admin: document.getElementById('nav-admin-btn')
+        };
+
+        Object.entries(tabs).forEach(([key, btn]) => {
+          if (key === view) {
+            btn.className = 'px-3.5 py-2 rounded text-sm font-semibold bg-white text-blue-950 shadow cursor-pointer';
+          } else {
+            btn.className = 'px-3.5 py-2 rounded text-sm font-semibold bg-blue-800 text-white hover:bg-blue-700 cursor-pointer';
+          }
+        });
+
+        if (view === 'admin') {
+          checkAdminSession();
+          fetchLiveCloudRecords(true);
+        }
+        if (view === 'track') {
+          fetchLiveCloudRecords(true);
+        }
+      }
+
+      // --- COURSE / PROGRAMME / BRANCH SYNC ---
+      function updateCourseAndBranches(preserveBranch) {
+        const courseEl = document.getElementById('course');
+        const progEl = document.getElementById('programme');
+        const branchEl = document.getElementById('branch');
+        const semEl = document.getElementById('joiningSemester');
+
+        const selectedCourse = courseEl.value || 'BE';
+        const config = COURSE_CONFIG[selectedCourse] || COURSE_CONFIG.BE;
+        progEl.value = config.programme;
+
+        const prevBranch = preserveBranch || branchEl.value;
+        branchEl.innerHTML = config.branches
+          .map(b => `<option value="${b.name}">${b.name}</option>`)
+          .join('');
+
+        if (prevBranch && config.branches.some(b => b.name === prevBranch)) {
+          branchEl.value = prevBranch;
+        }
+
+        const isPG = config.programme === 'PG';
+        const isLateral = semEl.value === '3rd Semester (Lateral)';
+
+        document.getElementById('puc-section').classList.toggle('hidden', isPG);
+        document.getElementById('diploma-section').classList.toggle('hidden', isPG || !isLateral);
+        document.getElementById('degree-section').classList.toggle('hidden', !isPG);
+      }
+
+      function renderStepper() {
+        const nav = document.getElementById('stepper-nav');
+        nav.innerHTML = STEP_LABELS.map((label, idx) => {
+          let style = 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200';
+          if (idx === currentStep) style = 'bg-blue-950 text-white border-blue-950 shadow-sm';
+          else if (idx < currentStep) style = 'bg-emerald-50 text-emerald-900 border-emerald-300';
+          return `<li>
+            <button type="button" data-step-jump="${idx}" aria-current="${idx === currentStep ? 'step' : 'false'}"
+              class="w-full p-2 rounded border text-center font-semibold cursor-pointer ${style}">
+              ${label}
+            </button>
+          </li>`;
+        }).join('');
+
+        nav.querySelectorAll('[data-step-jump]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const target = Number(btn.getAttribute('data-step-jump'));
+            if (target <= currentStep || validateStep(currentStep)) {
+              currentStep = target;
+              renderStepper();
+            }
+          });
+        });
+
+        document.querySelectorAll('.form-step').forEach((el, idx) => {
+          el.classList.toggle('hidden', idx !== currentStep);
+        });
+
+        document.getElementById('prev-btn').disabled = currentStep === 0;
+        document.getElementById('next-btn').classList.toggle('hidden', currentStep === STEP_LABELS.length - 1);
+        document.getElementById('preview-resume-btn').classList.toggle('hidden', currentStep !== STEP_LABELS.length - 1);
+        document.getElementById('submit-btn').classList.toggle('hidden', currentStep !== STEP_LABELS.length - 1);
+      }
+
+      function changeStep(delta) {
+        if (delta > 0 && !validateStep(currentStep)) return;
+        currentStep = Math.max(0, Math.min(STEP_LABELS.length - 1, currentStep + delta));
+        renderStepper();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      function toggleForeignFields() {
+        const nat = document.getElementById('nationality').value;
+        document.getElementById('foreign-fields').classList.toggle('hidden', nat === 'Indian');
+      }
+
+      function toggleOtherReligion() {
+        const rel = document.getElementById('religion').value;
+        document.getElementById('other-religion-wrap').classList.toggle('hidden', rel !== 'Other');
+      }
+
+      function toggleOtherBoards() {
+        const sslcB = document.getElementById('sslcBoard')?.value;
+        document.getElementById('sslc-other-board-wrap')?.classList.toggle('hidden', sslcB !== 'Other');
+        const pucB = document.getElementById('pucBoard')?.value;
+        document.getElementById('puc-other-board-wrap')?.classList.toggle('hidden', pucB !== 'Other');
+      }
+
+      function getEffectiveBoardName(selectId, otherInputId) {
+        const sel = document.getElementById(selectId)?.value || '';
+        if (sel === 'Other') {
+          return (document.getElementById(otherInputId)?.value || '').trim();
+        }
+        return sel;
+      }
+
+      function copyPermAddress() {
+        if (document.getElementById('sameAsPerm').checked) {
+          document.getElementById('correspondenceAddress').value = document.getElementById('permanentAddress').value;
+          saveDraft();
+        }
+      }
+
+      function calcPCM() {
+        const s1 = Number(document.getElementById('sub1Marks').value) || 0;
+        const s2 = Number(document.getElementById('sub2Marks').value) || 0;
+        const s3 = Number(document.getElementById('sub3Marks').value) || 0;
+        const total = s1 + s2 + s3;
+        const avg = total > 0 ? (total / 3) : 0;
+        document.getElementById('pcmTotal').value = total > 0 ? total : '';
+        document.getElementById('pcmAvg').value = total > 0 ? avg.toFixed(2) : '';
+
+        const badge = document.getElementById('eligibility-badge');
+        if (total === 0) {
+          badge.textContent = '';
+          return;
+        }
+        const cat = document.getElementById('actualCategory').value;
+        const cutoff = cat === 'GM' ? 45 : 40;
+        if (avg >= cutoff) {
+          badge.className = 'text-xs font-semibold px-3 py-1.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300';
+          badge.textContent = `Eligible under VTU Norms (PCM ${avg.toFixed(2)}% >= ${cutoff}% ${cat} cutoff)`;
+        } else {
+          badge.className = 'text-xs font-semibold px-3 py-1.5 rounded bg-red-100 text-red-900 border border-red-300';
+          badge.textContent = `Warning: PCM ${avg.toFixed(2)}% is below ${cutoff}% VTU eligibility cutoff`;
+        }
+      }
+
+      function calcPercentages() {
+        const sslcObt = Number(document.getElementById('sslcObtainedMarks').value) || 0;
+        const sslcMax = Number(document.getElementById('sslcMaxMarks').value) || 0;
+        document.getElementById('sslc-pct-display').textContent =
+          sslcMax > 0 && sslcObt > 0 ? `Calculated SSLC Percentage: ${((sslcObt / sslcMax) * 100).toFixed(2)}%` : '';
+      }
+
+      function toggleSspInput() {
+        const apply = document.getElementById('applySsp').value === 'Yes';
+        document.getElementById('ssp-id-wrap').classList.toggle('hidden', !apply);
+      }
+
+      function renderDocumentUploadCards() {
+        const grid = document.getElementById('document-upload-grid');
+        grid.innerHTML = REQUIRED_DOCS.map(doc => {
+          if (doc.conditional && document.getElementById(doc.conditional)?.value !== 'Yes') {
+            return '';
+          }
+          const isReq = doc.required || (doc.conditional && document.getElementById(doc.conditional)?.value === 'Yes');
+          const accept = doc.type === 'JPG' ? 'image/jpeg,image/png' : 'image/jpeg,image/png,application/pdf';
+          const uploaded = uploadedDocs[doc.key];
+
+          return `
+            <div class="border border-slate-200 rounded-lg p-3 bg-slate-50 flex flex-col justify-between">
+              <div>
+                <div class="flex items-start justify-between gap-2">
+                  <label for="file-${doc.key}" class="block text-xs font-bold text-slate-800">
+                    ${doc.label} ${isReq ? '<span class="text-red-600">*</span>' : ''}
+                  </label>
+                  <button type="button" data-scan-key="${doc.key}" aria-label="Scan ${doc.label} with camera"
+                    class="scan-card-btn shrink-0 px-2.5 py-1.5 min-h-[34px] rounded bg-indigo-100 hover:bg-indigo-200 text-indigo-950 text-[11px] font-bold cursor-pointer">
+                    &#128247; Scan
+                  </button>
+                </div>
+                <span class="text-[11px] text-slate-500 block mb-2">Target: ${doc.type} (&lt; 2 MB)</span>
+                <input id="file-${doc.key}" data-doc-key="${doc.key}" data-doc-type="${doc.type}" type="file" accept="${accept}"
+                  class="doc-file-input block w-full text-xs text-slate-600 file:mr-2 file:py-1.5 file:px-2.5 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-900 file:text-white hover:file:bg-blue-800 cursor-pointer" />
+              </div>
+              <div id="status-${doc.key}" class="mt-2 text-[11px]">
+                ${uploaded ? `<span class="text-emerald-700 font-semibold">&#10003; Normalized (${uploaded.normalizedFormat}, ${uploaded.sizeKB} KB)</span>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        grid.querySelectorAll('.doc-file-input').forEach(input => {
+          input.addEventListener('change', (e) => {
+            handleFileUpload(e, input.getAttribute('data-doc-key'), input.getAttribute('data-doc-type'));
+          });
+        });
+
+        grid.querySelectorAll('.scan-card-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            openCameraScanner(btn.getAttribute('data-scan-key'));
+          });
+        });
+
+        refreshDocumentViewer();
+      }
+
+      // --- SCROLLABLE DOCUMENT VIEWER IN STEP 5 ---
+      let activeViewerDocKey = '';
+
+      function refreshDocumentViewer(preferredKey) {
+        const selectEl = document.getElementById('doc-viewer-select');
+        const tabsEl = document.getElementById('doc-viewer-tabs');
+        const viewportEl = document.getElementById('doc-viewer-viewport');
+        const captionEl = document.getElementById('doc-viewer-caption');
+        if (!selectEl || !tabsEl || !viewportEl) return;
+
+        const uploadedKeys = REQUIRED_DOCS.map(d => d.key).filter(k => !!uploadedDocs[k]);
+
+        if (uploadedKeys.length === 0) {
+          activeViewerDocKey = '';
+          selectEl.innerHTML = `<option value="">-- No Documents Uploaded Yet --</option>`;
+          tabsEl.innerHTML = '';
+          captionEl.textContent = 'No documents uploaded yet. Upload or scan a file above to preview it here.';
+          viewportEl.innerHTML = `
+            <div class="text-center space-y-1 py-8">
+              <p class="text-sm font-semibold text-slate-600">No Document Uploaded Yet</p>
+              <p class="text-xs text-slate-500">Use the file upload cards or "Scan Document with Phone Camera" above to add documents.</p>
+            </div>`;
+          return;
+        }
+
+        if (preferredKey && uploadedDocs[preferredKey]) {
+          activeViewerDocKey = preferredKey;
+        } else if (!activeViewerDocKey || !uploadedDocs[activeViewerDocKey]) {
+          activeViewerDocKey = uploadedKeys[0];
+        }
+
+        selectEl.innerHTML = uploadedKeys.map(k => {
+          const meta = REQUIRED_DOCS.find(d => d.key === k);
+          return `<option value="${k}" ${k === activeViewerDocKey ? 'selected' : ''}>${meta ? meta.label : k}</option>`;
+        }).join('');
+
+        tabsEl.innerHTML = uploadedKeys.map(k => {
+          const meta = REQUIRED_DOCS.find(d => d.key === k);
+          const isActive = k === activeViewerDocKey;
+          return `<button type="button" role="tab" aria-selected="${isActive}" data-viewer-tab="${k}"
+            class="px-2.5 py-1 rounded text-[11px] font-semibold cursor-pointer transition ${
+              isActive ? 'bg-blue-950 text-white shadow-xs' : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-200'
+            }">
+            ${meta ? meta.label : k}
+          </button>`;
+        }).join('');
+
+        tabsEl.querySelectorAll('[data-viewer-tab]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            refreshDocumentViewer(btn.getAttribute('data-viewer-tab'));
+          });
+        });
+
+        const doc = uploadedDocs[activeViewerDocKey];
+        const meta = REQUIRED_DOCS.find(d => d.key === activeViewerDocKey);
+        captionEl.textContent = `Viewing: ${meta ? meta.label : activeViewerDocKey} (${doc.normalizedFormat}, ${doc.sizeKB} KB)`;
+
+        if (doc.dataUrl && doc.dataUrl.startsWith('data:application/pdf')) {
+          viewportEl.innerHTML = `
+            <div class="w-full h-full flex flex-col items-center">
+              <iframe src="${doc.dataUrl}" title="${meta ? meta.label : activeViewerDocKey} PDF Preview"
+                class="w-full h-68 border border-slate-300 rounded bg-white"></iframe>
+              <p class="text-[11px] text-slate-500 mt-1">PDF Document Attached (${doc.name} &bull; ${doc.sizeKB} KB)</p>
+            </div>`;
+        } else if (doc.dataUrl && doc.dataUrl.startsWith('data:image/')) {
+          viewportEl.innerHTML = `
+            <div class="w-full flex flex-col items-center">
+              <img src="${doc.dataUrl}" alt="${meta ? meta.label : activeViewerDocKey} Preview"
+                class="max-w-full max-h-68 object-contain border border-slate-300 rounded shadow-xs bg-white p-1" />
+              <p class="text-[11px] text-slate-500 mt-1.5">${doc.name} (${doc.normalizedFormat}, ${doc.sizeKB} KB)</p>
+            </div>`;
+        } else {
+          viewportEl.innerHTML = `<p class="text-xs text-slate-600">Document stored (${doc.name}).</p>`;
+        }
+      }
+
+      // Helper: Convert a data URL into a clean Uint8Array of raw binary bytes
+      function dataUrlToUint8Array(dataUrl) {
+        const commaIdx = dataUrl.indexOf(',');
+        const base64 = commaIdx !== -1 ? dataUrl.slice(commaIdx + 1) : dataUrl;
+        const cleanBase64 = base64.replace(/\s+/g, '');
+        const binaryStr = atob(cleanBase64);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) {
+          bytes[i] = binaryStr.charCodeAt(i);
+        }
+        return bytes;
+      }
+
+      // Helper: Convert an ArrayBuffer into a standard data URL for inline previews & storage
+      function arrayBufferToDataUrl(buffer, mimeType) {
+        const bytes = new Uint8Array(buffer);
+        const chunkSize = 0x8000;
+        let binary = '';
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+          binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+        }
+        return `data:${mimeType};base64,${btoa(binary)}`;
+      }
+
+      function handleFileUpload(event, key, targetType) {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        const statusEl = document.getElementById(`status-${key}`);
+
+        if (file.size > 10 * 1024 * 1024) {
+          statusEl.innerHTML = `<span class="text-red-600 font-semibold">Raw file exceeds 10 MB limit.</span>`;
+          return;
+        }
+
+        statusEl.innerHTML = `<span class="text-blue-700">Normalizing file...</span>`;
+
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = e => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              const maxDim = targetType === 'JPG' ? 600 : 1200;
+              const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
+              canvas.width = img.width * scale;
+              canvas.height = img.height * scale;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+              // Preserve PNG if uploaded as PNG for non-photo docs, otherwise compress as JPEG
+              const usePng = file.type === 'image/png' && targetType !== 'JPG';
+              const outputMime = usePng ? 'image/png' : 'image/jpeg';
+              const outputExt = usePng ? 'png' : 'jpg';
+              const normalizedDataUrl = usePng
+                ? canvas.toDataURL('image/png')
+                : canvas.toDataURL('image/jpeg', 0.82);
+
+              const binaryBytes = dataUrlToUint8Array(normalizedDataUrl);
+              if (binaryBytes.byteLength > 2 * 1024 * 1024) {
+                statusEl.innerHTML = `<span class="text-red-600 font-semibold">Exceeds 2 MB after compression.</span>`;
+                return;
+              }
+              // Store actual image extension (.jpg/.png) matching binary payload so ZIP & OS viewers never misidentify JPEG bytes as .pdf
+              uploadedDocs[key] = {
+                name: `${key}.${outputExt}`,
+                mimeType: outputMime,
+                normalizedFormat: outputExt.toUpperCase(),
+                sizeKB: Math.max(1, Math.round(binaryBytes.byteLength / 1024)),
+                dataUrl: normalizedDataUrl,
+                binaryData: binaryBytes
+              };
+              statusEl.innerHTML = `<span class="text-emerald-700 font-semibold">&#10003; Normalized (${outputExt.toUpperCase()}, ${uploadedDocs[key].sizeKB} KB)</span>`;
+              refreshDocumentViewer(key);
+            };
+            img.src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        } else if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+          if (file.size > 2 * 1024 * 1024) {
+            statusEl.innerHTML = `<span class="text-red-600 font-semibold">PDF must be less than 2 MB.</span>`;
+            return;
+          }
+          // Read raw binary ArrayBuffer directly to prevent any text-encoding corruption of PDF bytes
+          const reader = new FileReader();
+          reader.onload = e => {
+            const arrayBuffer = e.target.result;
+            const binaryBytes = new Uint8Array(arrayBuffer);
+            const pdfDataUrl = arrayBufferToDataUrl(arrayBuffer, 'application/pdf');
+            uploadedDocs[key] = {
+              name: `${key}.pdf`,
+              mimeType: 'application/pdf',
+              normalizedFormat: 'PDF',
+              sizeKB: Math.max(1, Math.round(binaryBytes.byteLength / 1024)),
+              dataUrl: pdfDataUrl,
+              binaryData: binaryBytes
+            };
+            statusEl.innerHTML = `<span class="text-emerald-700 font-semibold">&#10003; Verified (PDF, ${uploadedDocs[key].sizeKB} KB)</span>`;
+            refreshDocumentViewer(key);
+          };
+          reader.readAsArrayBuffer(file);
+        } else {
+          statusEl.innerHTML = `<span class="text-red-600 font-semibold">Unsupported file type. Upload JPEG, PNG, or PDF.</span>`;
+        }
+      }
+
+      // --- MOBILE CAMERA DOCUMENT SCANNER MODULE ---
+      let activeCameraStream = null;
+      let activeScanDocKey = 'sslcCard';
+      let capturedScanDataUrl = null;
+
+      function setScannerFeedback(msg, isError = false) {
+        const el = document.getElementById('scanner-feedback-msg');
+        if (!msg) {
+          el.classList.add('hidden');
+          el.textContent = '';
+          return;
+        }
+        el.textContent = msg;
+        el.className = `mt-1 font-semibold ${isError ? 'text-red-700' : 'text-emerald-700'}`;
+        el.classList.remove('hidden');
+      }
+
+      function stopCameraStream() {
+        if (activeCameraStream) {
+          activeCameraStream.getTracks().forEach(track => track.stop());
+          activeCameraStream = null;
+        }
+        const video = document.getElementById('scanner-video');
+        if (video) video.srcObject = null;
+      }
+
+      async function openCameraScanner(docKey) {
+        activeScanDocKey = docKey || document.getElementById('quick-scan-doc-select').value;
+        const docMeta = REQUIRED_DOCS.find(d => d.key === activeScanDocKey) || REQUIRED_DOCS[2];
+
+        // If quota doc is selected via quick-scan dropdown, enable its quota flag so the card is visible
+        if (docMeta.conditional && document.getElementById(docMeta.conditional)?.value !== 'Yes') {
+          document.getElementById(docMeta.conditional).value = 'Yes';
+          renderDocumentUploadCards();
+        }
+
+        document.getElementById('scanner-modal-title').textContent = `Scan: ${docMeta.label}`;
+        document.getElementById('scanner-target-label').textContent =
+          `Auto-formats to ${docMeta.type} (< 2 MB) and attaches to your application`;
+        setScannerFeedback('');
+        capturedScanDataUrl = null;
+
+        const video = document.getElementById('scanner-video');
+        const guide = document.getElementById('scanner-overlay-guide');
+        const preview = document.getElementById('scanner-preview-img');
+        const liveControls = document.getElementById('scanner-live-controls');
+        const reviewControls = document.getElementById('scanner-review-controls');
+
+        video.classList.remove('hidden');
+        guide.classList.remove('hidden');
+        preview.classList.add('hidden');
+        liveControls.classList.remove('hidden');
+        reviewControls.classList.add('hidden');
+
+        document.getElementById('camera-scanner-modal').classList.remove('hidden');
+
+        // Attempt live rear-camera stream first; gracefully fall back to native capture input on desktop or permission denial
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          try {
+            activeCameraStream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+              audio: false
+            });
+            video.srcObject = activeCameraStream;
+          } catch (err) {
+            stopCameraStream();
+            video.classList.add('hidden');
+            guide.classList.add('hidden');
+            setScannerFeedback(
+              'Live camera unavailable or permission denied. Tap "Use Phone Camera App / Gallery" below to capture or choose a file.',
+              true
+            );
+          }
+        } else {
+          video.classList.add('hidden');
+          guide.classList.add('hidden');
+          setScannerFeedback(
+            'Direct camera preview is not supported in this browser. Tap "Use Phone Camera App / Gallery" below.',
+            true
+          );
+        }
+      }
+
+      function snapDocumentFrame() {
+        const video = document.getElementById('scanner-video');
+        if (!video.videoWidth || !video.videoHeight) {
+          setScannerFeedback('Camera feed not ready yet. Please use the Phone Camera App / Gallery button.', true);
+          return;
+        }
+
+        const docMeta = REQUIRED_DOCS.find(d => d.key === activeScanDocKey) || REQUIRED_DOCS[2];
+        const maxDim = docMeta.type === 'JPG' ? 800 : 1400;
+        const scale = Math.min(maxDim / video.videoWidth, maxDim / video.videoHeight, 1);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(video.videoWidth * scale);
+        canvas.height = Math.round(video.videoHeight * scale);
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        capturedScanDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        stopCameraStream();
+
+        const preview = document.getElementById('scanner-preview-img');
+        preview.src = capturedScanDataUrl;
+        preview.classList.remove('hidden');
+        video.classList.add('hidden');
+        document.getElementById('scanner-overlay-guide').classList.add('hidden');
+        document.getElementById('scanner-live-controls').classList.add('hidden');
+        document.getElementById('scanner-review-controls').classList.remove('hidden');
+        setScannerFeedback('Review your scan below. Ensure text is sharp and readable before confirming.');
+      }
+
+      function confirmScannedDocument() {
+        if (!capturedScanDataUrl) return;
+        const docMeta = REQUIRED_DOCS.find(d => d.key === activeScanDocKey) || REQUIRED_DOCS[2];
+        const approxBytes = Math.round((capturedScanDataUrl.length * 3) / 4);
+
+        if (approxBytes > 2 * 1024 * 1024) {
+          setScannerFeedback('Captured image exceeds 2 MB limit. Please retake from slightly further back.', true);
+          return;
+        }
+
+        // Store camera capture as valid JPEG with .jpg extension and raw binary bytes
+        const scanBinaryBytes = dataUrlToUint8Array(capturedScanDataUrl);
+        uploadedDocs[docMeta.key] = {
+          name: `${docMeta.key}.jpg`,
+          mimeType: 'image/jpeg',
+          normalizedFormat: 'JPG',
+          sizeKB: Math.max(1, Math.round(scanBinaryBytes.byteLength / 1024)),
+          dataUrl: capturedScanDataUrl,
+          binaryData: scanBinaryBytes
+        };
+
+        renderDocumentUploadCards();
+        const statusEl = document.getElementById(`status-${docMeta.key}`);
+        if (statusEl) {
+          statusEl.innerHTML = `<span class="text-emerald-700 font-semibold">&#10003; Camera Scan Saved (${docMeta.type}, ${uploadedDocs[docMeta.key].sizeKB} KB)</span>`;
+        }
+
+        closeCameraScanner();
+      }
+
+      function closeCameraScanner() {
+        stopCameraStream();
+        capturedScanDataUrl = null;
+        document.getElementById('camera-scanner-modal').classList.add('hidden');
+      }
+
+      // Verhoeff Checksum for 12-Digit UID
+      function isValidAadhar(num) {
+        if (!/^\d{12}$/.test(num)) return false;
+        const d = [[0,1,2,3,4,5,6,7,8,9],[1,2,3,4,0,6,7,8,9,5],[2,3,4,0,1,7,8,9,5,6],[3,4,0,1,2,8,9,5,6,7],[4,0,1,2,3,9,5,6,7,8],
+                   [5,9,8,7,6,0,4,3,2,1],[6,5,9,8,7,1,0,4,3,2],[7,6,5,9,8,2,1,0,4,3],[8,7,6,5,9,3,2,1,0,4],[9,8,7,6,5,4,3,2,1,0]];
+        const p = [[0,1,2,3,4,5,6,7,8,9],[1,5,7,6,2,8,3,0,9,4],[5,8,0,3,7,9,6,1,4,2],[8,9,1,6,0,4,3,5,2,7],
+                   [9,4,5,3,1,2,6,8,7,0],[4,2,8,6,5,7,3,9,0,1],[2,7,9,3,8,0,6,4,1,5],[7,0,4,6,9,1,3,2,5,8]];
+        let c = 0;
+        const rev = num.split('').map(Number).reverse();
+        for (let i = 0; i < rev.length; i++) c = d[c][p[i % 8][rev[i]]];
+        return c === 0;
+      }
+
+      function maskId(val) {
+        if (!val) return '';
+        const clean = String(val).replace(/\s+/g, '');
+        if (clean.startsWith('XXXX-')) return clean;
+        return /^\d{12}$/.test(clean) ? `XXXX-XXXX-${clean.slice(-4)}` : `****${clean.slice(-4)}`;
+      }
+
+      function setFieldError(id, msg) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const errP = el.parentElement.querySelector('.error-msg');
+        if (msg) {
+          el.classList.add('border-red-600');
+          if (errP) { errP.textContent = msg; errP.classList.remove('hidden'); }
+        } else {
+          el.classList.remove('border-red-600');
+          if (errP) { errP.textContent = ''; errP.classList.add('hidden'); }
+        }
+      }
+
+      function validateStep(stepIdx) {
+        let valid = true;
+        document.querySelectorAll('.error-msg').forEach(p => p.classList.add('hidden'));
+        document.querySelectorAll('input, textarea, select').forEach(el => el.classList.remove('border-red-600'));
+
+        if (stepIdx === 1) {
+          ['candidateName10th', 'candidateNameId', 'fatherName', 'motherName', 'dob'].forEach(id => {
+            if (!document.getElementById(id).value.trim()) {
+              setFieldError(id, 'This field is required.');
+              valid = false;
+            }
+          });
+          const idType = document.getElementById('idType').value;
+          const idNum = document.getElementById('idNumber').value.trim();
+          if (idType === 'Aadhar' && !isValidAadhar(idNum)) {
+            setFieldError('idNumber', 'Enter a valid 12-digit Aadhar number (checksum failed).');
+            valid = false;
+          } else if (!idNum) {
+            setFieldError('idNumber', 'Identity document number is required.');
+            valid = false;
+          }
+        }
+
+        if (stepIdx === 2) {
+          ['mobile', 'whatsappMobile', 'ownerPrincipalMobile'].forEach(id => {
+            if (!/^[6-9]\d{9}$/.test(document.getElementById(id).value.trim())) {
+              setFieldError(id, 'Enter a valid 10-digit Indian mobile number.');
+              valid = false;
+            }
+          });
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(document.getElementById('email').value.trim())) {
+            setFieldError('email', 'Enter a valid email address.');
+            valid = false;
+          }
+          ['currentAddress', 'ownerPrincipalName', 'permanentAddress', 'correspondenceAddress'].forEach(id => {
+            if (!document.getElementById(id).value.trim()) {
+              setFieldError(id, 'This field is required.');
+              valid = false;
+            }
+          });
+        }
+
+        if (stepIdx === 3) {
+          ['admissionDate', 'seatNumber', 'rank', 'caste'].forEach(id => {
+            if (!document.getElementById(id).value.trim()) {
+              setFieldError(id, 'This field is required.');
+              valid = false;
+            }
+          });
+          const seatVal = document.getElementById('seatNumber').value.trim().toUpperCase();
+          const records = JSON.parse(localStorage.getItem(STORAGE_KEYS.RECORDS) || '[]');
+          if (records.some(r => r.seatNumber === seatVal)) {
+            setFieldError('seatNumber', 'Duplicate Entrance Seat Number already registered.');
+            valid = false;
+          }
+        }
+
+        if (stepIdx === 4) {
+          ['sslcRegNo', 'sslcPassMonthYear', 'sslcObtainedMarks', 'sslcMaxMarks'].forEach(id => {
+            if (!document.getElementById(id).value.trim()) {
+              setFieldError(id, 'Required');
+              valid = false;
+            }
+          });
+          const sslcBoardVal = document.getElementById('sslcBoard')?.value || '';
+          if (!sslcBoardVal) {
+            setFieldError('sslcBoard', 'Please select SSLC / X Examination Board.');
+            valid = false;
+          } else if (sslcBoardVal === 'Other' && !document.getElementById('sslcOtherBoard')?.value.trim()) {
+            setFieldError('sslcOtherBoard', 'Please specify the SSLC / X Examination Board name.');
+            valid = false;
+          }
+
+          const isPG = document.getElementById('programme')?.value === 'PG';
+          const hasPucMarks = !!(document.getElementById('pucObtainedMarks')?.value.trim() || document.getElementById('pucRegNo')?.value.trim());
+          if (!isPG && hasPucMarks) {
+            const pucBoardVal = document.getElementById('pucBoard')?.value || '';
+            if (!pucBoardVal) {
+              setFieldError('pucBoard', 'Please select PUC / XII Examination Board.');
+              valid = false;
+            } else if (pucBoardVal === 'Other' && !document.getElementById('pucOtherBoard')?.value.trim()) {
+              setFieldError('pucOtherBoard', 'Please specify the PUC / XII Examination Board name.');
+              valid = false;
+            }
+          }
+        }
+
+        if (stepIdx === 5) {
+          if (document.getElementById('applySsp').value === 'Yes' && !/^\d{11}$/.test(document.getElementById('sspId').value.trim())) {
+            setFieldError('sspId', 'SSP ID must be an exact 11-digit number.');
+            valid = false;
+          }
+          if (!document.getElementById('declarationCheck').checked) {
+            alert('Please accept the VTU Admission Declaration before submitting.');
+            valid = false;
+          }
+        }
+        return valid;
+      }
+
+      function saveDraft() {
+        const fd = new FormData(document.getElementById('admission-form'));
+        const obj = Object.fromEntries(fd.entries());
+        localStorage.setItem(STORAGE_KEYS.DRAFT, JSON.stringify(obj));
+        const ind = document.getElementById('autosave-indicator');
+        ind.textContent = `Saved at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      }
+
+      function restoreDraft() {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEYS.DRAFT) || 'null');
+        if (!saved) return;
+        Object.entries(saved).forEach(([k, v]) => {
+          const el = document.querySelector(`[name="${k}"]`);
+          if (el && el.type !== 'file') el.value = v;
+        });
+        updateCourseAndBranches(saved.branch);
+        toggleForeignFields();
+        toggleOtherReligion();
+        toggleOtherBoards();
+        toggleSspInput();
+        calcPCM();
+        calcPercentages();
+      }
+
+      function fillSampleData() {
+        // Compute a valid 12-digit Verhoeff test number dynamically so no real citizen ID is hardcoded
+        const base11 = '99990000123';
+        const d = [[0,1,2,3,4,5,6,7,8,9],[1,2,3,4,0,6,7,8,9,5],[2,3,4,0,1,7,8,9,5,6],[3,4,0,1,2,8,9,5,6,7],[4,0,1,2,3,9,5,6,7,8],
+                   [5,9,8,7,6,0,4,3,2,1],[6,5,9,8,7,1,0,4,3,2],[7,6,5,9,8,2,1,0,4,3],[8,7,6,5,9,3,2,1,0,4],[9,8,7,6,5,4,3,2,1,0]];
+        const p = [[0,1,2,3,4,5,6,7,8,9],[1,5,7,6,2,8,3,0,9,4],[5,8,0,3,7,9,6,1,4,2],[8,9,1,6,0,4,3,5,2,7],
+                   [9,4,5,3,1,2,6,8,7,0],[4,2,8,6,5,7,3,9,0,1],[2,7,9,3,8,0,6,4,1,5],[7,0,4,6,9,1,3,2,5,8]];
+        const inv = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+        let c = 0;
+        const rev = base11.split('').map(Number).reverse();
+        for (let i = 0; i < rev.length; i++) c = d[c][p[(i + 1) % 8][rev[i]]];
+        const testUid = base11 + inv[c];
+
+        const sampleValues = {
+          course: 'BE',
+          branch: 'COMPUTER SCIENCE & ENGINEERING',
+          candidateName10th: 'KARTHIK VENKATESH DESAI',
+          candidateNameId: 'KARTHIK VENKATESH DESAI',
+          fatherName: 'VENKATESH DESAI',
+          motherName: 'SAVITA DESAI',
+          gender: 'Male',
+          dob: '2008-07-19',
+          nationality: 'Indian',
+          stateCountry: 'Karnataka',
+          religion: 'Hindu',
+          idType: 'Aadhar',
+          idNumber: testUid,
+          mobile: '9845123456',
+          whatsappMobile: '9845123456',
+          email: 'karthik.desai@example.com',
+          parentOccupation: 'Business',
+          cityType: 'Urban',
+          currentAddress: 'Bhagya Nagar, 2nd Cross, Belagavi - 590006',
+          ownerPrincipalName: 'Venkatesh Desai',
+          ownerPrincipalMobile: '9845123456',
+          permanentAddress: 'Bhagya Nagar, 2nd Cross, Belagavi - 590006',
+          correspondenceAddress: 'Bhagya Nagar, 2nd Cross, Belagavi - 590006',
+          admissionDate: '2026-08-22',
+          admissionMode: 'KEA',
+          joiningSemester: '1st Semester',
+          seatNumber: '26UGEAK' + Math.floor(100 + Math.random() * 899),
+          rank: '18420',
+          seatType: 'Government',
+          actualCategory: 'GM',
+          allottedCategory: 'GM',
+          caste: 'Brahmin',
+          otherReservation: 'None',
+          sslcStudiedInKA: 'Yes',
+          sslcBoard: 'Karnataka SSLC Board (KSEAB)',
+            sslcBoard: 'Karnataka SSLC Board (KSEAB)',
+          sslcState: 'Karnataka',
+          sslcRegNo: '20240981234',
+          sslcPassMonthYear: 'APR-2024',
+          sslcObtainedMarks: '588',
+          sslcMaxMarks: '625',
+          pucStudiedInKA: 'Yes',
+          pucBoard: 'Karnataka PU Board',
+          pucRegNo: '654321',
+          pucPassMonthYear: 'MAR-2026',
+          pucObtainedMarks: '554',
+          pucMaxMarks: '600',
+          sub1Marks: '92',
+          sub2Marks: '88',
+          sub3Marks: '95',
+          mediumOfInstruction: 'English',
+          hk371jClaim: 'No',
+          kannadaMedClaim: 'No',
+          casteResClaim: 'No',
+          applySsp: 'No'
+        };
+
+        Object.entries(sampleValues).forEach(([k, v]) => {
+          const el = document.querySelector(`[name="${k}"]`);
+          if (el) el.value = v;
+        });
+
+        updateCourseAndBranches(sampleValues.branch);
+        toggleForeignFields();
+        toggleOtherReligion();
+        toggleOtherBoards();
+        toggleSspInput();
+        calcPCM();
+        calcPercentages();
+        saveDraft();
+      }
+
+      function clearDraft() {
+        localStorage.removeItem(STORAGE_KEYS.DRAFT);
+        document.getElementById('admission-form').reset();
+        uploadedDocs = {};
+        currentStep = 0;
+        updateCourseAndBranches();
+        renderDocumentUploadCards();
+        renderStepper();
+      }
+
+      // --- RESUME HTML BUILDER, PRE-SUBMISSION PREVIEW & MULTI-DOCUMENT PDF ---
+      function buildResumeHtml(rec, isDraftPreview = false) {
+        const photoSrc = rec.docs?.photo?.dataUrl ||
+          'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="120"><rect width="100%" height="100%" fill="%23e2e8f0"/><text x="50%" y="50%" font-size="11" text-anchor="middle" fill="%23475569">PHOTO</text></svg>';
+        const sigSrc = rec.docs?.signature?.dataUrl ||
+          'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="36"><rect width="100%" height="100%" fill="%23f8fafc"/><text x="50%" y="55%" font-size="10" text-anchor="middle" fill="%23475569">SIGNATURE</text></svg>';
+
+        const sslcBoardDisplay = rec.sslcBoard === 'Other' ? (rec.sslcOtherBoard || 'Other Board') : (rec.sslcBoard || 'Karnataka SSLC Board');
+        const pucBoardDisplay = rec.pucBoard === 'Other' ? (rec.pucOtherBoard || 'Other Board') : (rec.pucBoard || 'PU Board');
+
+        // Build checklist & embedded gallery for all uploaded documents (excluding photo & signature already shown in header)
+        const docKeys = REQUIRED_DOCS.map(d => d.key).filter(k => k !== 'photo' && k !== 'signature' && rec.docs && rec.docs[k]);
+        const allAttachedKeys = REQUIRED_DOCS.map(d => d.key).filter(k => rec.docs && rec.docs[k]);
+
+        const checklistRows = allAttachedKeys.length > 0
+          ? allAttachedKeys.map((k, idx) => {
+              const meta = REQUIRED_DOCS.find(d => d.key === k);
+              const d = rec.docs[k];
+              const isPdf = d.dataUrl && d.dataUrl.startsWith('data:application/pdf');
+              return `<tr>
+                <td class="border border-slate-400 p-1.5 text-center">${idx + 1}</td>
+                <td class="border border-slate-400 p-1.5 font-semibold">${meta ? meta.label : k}</td>
+                <td class="border border-slate-400 p-1.5">${d.normalizedFormat} (${d.sizeKB} KB)</td>
+                <td class="border border-slate-400 p-1.5">${isPdf ? 'Appended as PDF Attachment Page(s)' : 'Embedded Inline Below'}</td>
+              </tr>`;
+            }).join('')
+          : `<tr><td colspan="4" class="border border-slate-400 p-2 text-center text-slate-500">No supporting documents uploaded yet.</td></tr>`;
+
+        const embeddedDocsHtml = docKeys.map(k => {
+          const meta = REQUIRED_DOCS.find(d => d.key === k);
+          const d = rec.docs[k];
+          const label = meta ? meta.label : k;
+          if (d.dataUrl && d.dataUrl.startsWith('data:image/')) {
+            return `
+              <div class="border border-slate-400 rounded p-3 mb-3 break-inside-avoid bg-white">
+                <div class="font-bold text-blue-950 border-b border-slate-300 pb-1 mb-2">
+                  ATTACHED DOCUMENT: ${label.toUpperCase()} (${d.name} &bull; ${d.sizeKB} KB)
+                </div>
+                <img src="${d.dataUrl}" alt="${label}" class="max-w-full max-h-[520px] object-contain mx-auto border border-slate-200" />
+              </div>`;
+          } else {
+            return `
+              <div class="border border-slate-400 rounded p-3 mb-3 bg-slate-50 break-inside-avoid">
+                <div class="font-bold text-blue-950">
+                  ATTACHED PDF DOCUMENT: ${label.toUpperCase()} (${d.name} &bull; ${d.sizeKB} KB)
+                </div>
+                <p class="text-[11px] text-slate-600 mt-1">
+                  This multi-page/uploaded PDF document is appended immediately following the summary pages in the generated Official Admission Resume PDF.
+                </p>
+              </div>`;
+          }
+        }).join('');
+
+        return `
+          ${isDraftPreview ? `<div class="bg-amber-100 border border-amber-400 text-amber-950 font-bold text-center py-1.5 px-3 mb-3 rounded">DRAFT PREVIEW — NOT YET SUBMITTED OR SYNCED TO CLOUD</div>` : ''}
+          <div class="text-center border-b-2 border-blue-950 pb-3 mb-4">
+            <p class="font-bold text-blue-950 text-sm">VISVESVARAYA TECHNOLOGICAL UNIVERSITY, BELAGAVI</p>
+            <p class="font-bold text-slate-900 text-base">JAIN COLLEGE OF ENGINEERING, BELAGAVI (Code: JI | Region: 2)</p>
+            <p class="text-xs font-semibold text-slate-600 mt-1">OFFICIAL STUDENT ADMISSION RESUME — ACADEMIC YEAR 2026–27</p>
+          </div>
+
+          <table class="w-full border-collapse border border-slate-400 mb-4">
+            <tr>
+              <th class="border border-slate-400 bg-slate-100 p-2 text-left w-1/4">Admission ID</th>
+              <td class="border border-slate-400 p-2 font-bold text-blue-950">${rec.Admission_ID}</td>
+              <th class="border border-slate-400 bg-slate-100 p-2 text-left w-1/4">Course &amp; Branch</th>
+              <td class="border border-slate-400 p-2 font-semibold">${rec.programme} - ${rec.course} (${rec.branch})</td>
+              <td rowspan="4" class="border border-slate-400 p-2 text-center align-middle w-32">
+                <img src="${photoSrc}" alt="Student Photo" class="w-24 h-28 object-cover mx-auto border border-slate-400 mb-1" />
+                <img src="${sigSrc}" alt="Student Signature" class="w-24 h-8 object-contain mx-auto border border-slate-300" />
+              </td>
+            </tr>
+            <tr>
+              <th class="border border-slate-400 bg-slate-100 p-2 text-left">Candidate Name (10th)</th>
+              <td class="border border-slate-400 p-2 font-semibold">${rec.candidateName10th || '-'}</td>
+              <th class="border border-slate-400 bg-slate-100 p-2 text-left">Name (As in ID)</th>
+              <td class="border border-slate-400 p-2">${rec.candidateNameId || '-'}</td>
+            </tr>
+            <tr>
+              <th class="border border-slate-400 bg-slate-100 p-2 text-left">Father's Name</th>
+              <td class="border border-slate-400 p-2">${rec.fatherName || '-'}</td>
+              <th class="border border-slate-400 bg-slate-100 p-2 text-left">Mother's Name</th>
+              <td class="border border-slate-400 p-2">${rec.motherName || '-'}</td>
+            </tr>
+            <tr>
+              <th class="border border-slate-400 bg-slate-100 p-2 text-left">Gender / DOB</th>
+              <td class="border border-slate-400 p-2">${rec.gender || '-'} / ${rec.dob || '-'}</td>
+              <th class="border border-slate-400 bg-slate-100 p-2 text-left">${rec.idType || 'ID'} Number</th>
+              <td class="border border-slate-400 p-2 font-mono">${maskId(rec.idNumber)}</td>
+            </tr>
+          </table>
+
+          <div class="bg-blue-950 text-white font-bold px-2.5 py-1 mb-1">ADMISSION, CATEGORY &amp; QUOTA DETAILS</div>
+          <table class="w-full border-collapse border border-slate-400 mb-4">
+            <tr>
+              <th class="border border-slate-400 bg-slate-100 p-1.5 text-left w-1/4">Admission Mode</th>
+              <td class="border border-slate-400 p-1.5">${rec.admissionMode || '-'}</td>
+              <th class="border border-slate-400 bg-slate-100 p-1.5 text-left w-1/4">Seat No / Rank</th>
+              <td class="border border-slate-400 p-1.5">${rec.seatNumber || '-'} / Rank: ${rec.rank || '-'}</td>
+            </tr>
+            <tr>
+              <th class="border border-slate-400 bg-slate-100 p-1.5 text-left">Actual Category &amp; Caste</th>
+              <td class="border border-slate-400 p-1.5">${rec.actualCategory || '-'} (${rec.caste || '-'})</td>
+              <th class="border border-slate-400 bg-slate-100 p-1.5 text-left">Allotted Category</th>
+              <td class="border border-slate-400 p-1.5">${rec.allottedCategory || '-'} (${rec.seatType || '-'})</td>
+            </tr>
+            <tr>
+              <th class="border border-slate-400 bg-slate-100 p-1.5 text-left">HK-371J / Kannada Med</th>
+              <td class="border border-slate-400 p-1.5">HK-371J: ${rec.hk371jClaim || 'No'} | Kannada: ${rec.kannadaMedClaim || 'No'}</td>
+              <th class="border border-slate-400 bg-slate-100 p-1.5 text-left">SSP Scholarship ID</th>
+              <td class="border border-slate-400 p-1.5 font-mono">${rec.applySsp === 'Yes' ? (rec.sspId || 'Pending') : 'Not Applied'}</td>
+            </tr>
+          </table>
+
+          <div class="bg-blue-950 text-white font-bold px-2.5 py-1 mb-1">CONTACT &amp; ADDRESS DETAILS</div>
+          <table class="w-full border-collapse border border-slate-400 mb-4">
+            <tr>
+              <th class="border border-slate-400 bg-slate-100 p-1.5 text-left w-1/4">Mobile / WhatsApp</th>
+              <td class="border border-slate-400 p-1.5">${rec.mobile || '-'} / ${rec.whatsappMobile || '-'}</td>
+              <th class="border border-slate-400 bg-slate-100 p-1.5 text-left w-1/4">Email Address</th>
+              <td class="border border-slate-400 p-1.5">${rec.email || '-'}</td>
+            </tr>
+            <tr>
+              <th class="border border-slate-400 bg-slate-100 p-1.5 text-left">Current / Hostel Address</th>
+              <td colspan="3" class="border border-slate-400 p-1.5">${rec.currentAddress || '-'} (Owner/Principal: ${rec.ownerPrincipalName || '-'} - ${rec.ownerPrincipalMobile || '-'})</td>
+            </tr>
+            <tr>
+              <th class="border border-slate-400 bg-slate-100 p-1.5 text-left">Permanent Address</th>
+              <td colspan="3" class="border border-slate-400 p-1.5">${rec.permanentAddress || '-'}</td>
+            </tr>
+          </table>
+
+          <div class="bg-blue-950 text-white font-bold px-2.5 py-1 mb-1">QUALIFYING EXAMINATION MARKS &amp; BOARDS</div>
+          <table class="w-full border-collapse border border-slate-400 mb-4">
+            <tr class="bg-slate-100">
+              <th class="border border-slate-400 p-1.5 text-left">Examination</th>
+              <th class="border border-slate-400 p-1.5 text-left">Examination Board &amp; State</th>
+              <th class="border border-slate-400 p-1.5 text-left">Reg. Number</th>
+              <th class="border border-slate-400 p-1.5 text-left">Passing Year</th>
+              <th class="border border-slate-400 p-1.5 text-left">Marks (Obt / Max)</th>
+            </tr>
+            <tr>
+              <td class="border border-slate-400 p-1.5 font-semibold">SSLC / X</td>
+              <td class="border border-slate-400 p-1.5"><strong>${sslcBoardDisplay}</strong> (${rec.sslcState || 'Karnataka'}, KA: ${rec.sslcStudiedInKA || 'Yes'})</td>
+              <td class="border border-slate-400 p-1.5">${rec.sslcRegNo || '-'}</td>
+              <td class="border border-slate-400 p-1.5">${rec.sslcPassMonthYear || '-'}</td>
+              <td class="border border-slate-400 p-1.5">${rec.sslcObtainedMarks || '-'} / ${rec.sslcMaxMarks || '-'}</td>
+            </tr>
+            ${rec.pucRegNo || rec.pucObtainedMarks ? `
+            <tr>
+              <td class="border border-slate-400 p-1.5 font-semibold">PUC / XII</td>
+              <td class="border border-slate-400 p-1.5"><strong>${pucBoardDisplay}</strong> (${rec.pucState || 'Karnataka'}, KA: ${rec.pucStudiedInKA || 'Yes'})</td>
+              <td class="border border-slate-400 p-1.5">${rec.pucRegNo || '-'}</td>
+              <td class="border border-slate-400 p-1.5">${rec.pucPassMonthYear || '-'}</td>
+              <td class="border border-slate-400 p-1.5">${rec.pucObtainedMarks || '-'} / ${rec.pucMaxMarks || '-'} (PCM: ${rec.pcmTotal || '-'}/300 | ${rec.pcmAvg || '-'}%)</td>
+            </tr>` : ''}
+            ${rec.degreeRegNo ? `
+            <tr>
+              <td class="border border-slate-400 p-1.5 font-semibold">Degree</td>
+              <td class="border border-slate-400 p-1.5">University</td>
+              <td class="border border-slate-400 p-1.5">${rec.degreeRegNo}</td>
+              <td class="border border-slate-400 p-1.5">${rec.degreePassMonthYear}</td>
+              <td class="border border-slate-400 p-1.5">${rec.degreeObtainedMarks} / ${rec.degreeMaxMarks}</td>
+            </tr>` : ''}
+          </table>
+
+          <div class="bg-blue-950 text-white font-bold px-2.5 py-1 mb-1">UPLOADED DOCUMENTS CHECKLIST</div>
+          <table class="w-full border-collapse border border-slate-400 mb-4">
+            <tr class="bg-slate-100">
+              <th class="border border-slate-400 p-1.5 text-center w-10">#</th>
+              <th class="border border-slate-400 p-1.5 text-left">Document Name</th>
+              <th class="border border-slate-400 p-1.5 text-left">Format &amp; Size</th>
+              <th class="border border-slate-400 p-1.5 text-left">PDF Inclusion Mode</th>
+            </tr>
+            ${checklistRows}
+          </table>
+
+          <div class="border border-slate-400 bg-slate-50 p-3 text-[11px] space-y-4 mb-4">
+            <p><strong>DECLARATION:</strong> This data will be shared with SSP, NAD, and Social Welfare Department for availing various government schemes. All entries have been verified against original documents stored in Google Drive (<code>${rec.driveFolderPath}</code>).</p>
+            <div class="flex justify-between pt-4 font-bold">
+              <span>Signature of Candidate</span>
+              <span>Signature &amp; Seal of Admission Officer</span>
+            </div>
+          </div>
+
+          ${embeddedDocsHtml ? `
+            <div class="mt-4 pt-3 border-t-2 border-blue-950">
+              <div class="bg-blue-950 text-white font-bold px-2.5 py-1 mb-3">ENCLOSED SUPPORTING DOCUMENTS (IMAGES &amp; ATTACHMENT INDEX)</div>
+              ${embeddedDocsHtml}
+            </div>
+          ` : ''}
+        `;
+      }
+
+      function renderResumePreview(rec) {
+        activePreviewRecord = rec;
+        document.getElementById('notification-status-banner').textContent =
+          `Admission ID: ${rec.Admission_ID} | Drive Folder: ${rec.driveFolderPath} | Email: ${rec.emailStatus} | WhatsApp: ${rec.whatsAppStatus}`;
+        document.getElementById('printable-resume').innerHTML = buildResumeHtml(rec, false);
+      }
+
+      function collectDraftRecordForPreview() {
+        const fd = new FormData(document.getElementById('admission-form'));
+        const data = Object.fromEntries(fd.entries());
+        const branchSlug = (data.branch || 'BRANCH').replace(/[^a-zA-Z0-9]+/g, '_');
+        const nameSlug = (data.candidateName10th || 'CANDIDATE').trim().toUpperCase().replace(/\s+/g, '_');
+        return {
+          ...data,
+          Admission_ID: 'PREVIEW-2026',
+          candidateName10th: (data.candidateName10th || '').toUpperCase(),
+          candidateNameId: (data.candidateNameId || '').toUpperCase(),
+          fatherName: (data.fatherName || '').toUpperCase(),
+          motherName: (data.motherName || '').toUpperCase(),
+          seatNumber: (data.seatNumber || '').toUpperCase(),
+          driveFolderPath: `/Admissions2026/${data.course || 'BE'}/${branchSlug}/${nameSlug}_PREVIEW/`,
+          docs: uploadedDocs
+        };
+      }
+
+      function openPreSubmitPreview() {
+        const draftRec = collectDraftRecordForPreview();
+        document.getElementById('pre-submit-resume-container').innerHTML = buildResumeHtml(draftRec, true);
+        document.getElementById('pre-submit-preview-modal').classList.remove('hidden');
+      }
+
+      /**
+       * Generates the complete Admission Resume PDF containing:
+       * 1) All entered details + Photo + Signature + inline embedded JPG/PNG documents (via html2pdf)
+       * 2) Every uploaded PDF document appended as full pages at the end (via pdf-lib)
+       */
+      async function buildCompleteResumePdfBlob(element, rec) {
+        if (!window.html2pdf) return null;
+
+        const basePdfArrayBuffer = await html2pdf()
+          .set({
+            margin: 8,
+            image: { type: 'jpeg', quality: 0.96 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          })
+          .from(element)
+          .outputPdf('arraybuffer');
+
+        // Merge any uploaded PDF attachments into the final PDF using pdf-lib
+        const pdfKeys = REQUIRED_DOCS.map(d => d.key).filter(k =>
+          rec.docs && rec.docs[k] && rec.docs[k].dataUrl && rec.docs[k].dataUrl.startsWith('data:application/pdf')
+        );
+
+        if (window.PDFLib && pdfKeys.length > 0) {
+          const mergedPdf = await window.PDFLib.PDFDocument.load(basePdfArrayBuffer);
+          for (const k of pdfKeys) {
+            try {
+              const base64 = rec.docs[k].dataUrl.split(',')[1];
+              const binaryStr = atob(base64);
+              const bytes = new Uint8Array(binaryStr.length);
+              for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+              const attachedDoc = await window.PDFLib.PDFDocument.load(bytes);
+              const copiedPages = await mergedPdf.copyPages(attachedDoc, attachedDoc.getPageIndices());
+              copiedPages.forEach(page => mergedPdf.addPage(page));
+            } catch (err) {
+              console.warn(`Could not merge PDF attachment ${k}:`, err);
+            }
+          }
+          const finalBytes = await mergedPdf.save();
+          return new Blob([finalBytes], { type: 'application/pdf' });
+        }
+
+        return new Blob([basePdfArrayBuffer], { type: 'application/pdf' });
+      }
+
+      async function downloadOfficialPdf(rec, sourceElementId = 'printable-resume') {
+        const element = document.getElementById(sourceElementId);
+        const filename = `Admission_Resume_${rec.Admission_ID}.pdf`;
+        const blob = await buildCompleteResumePdfBlob(element, rec);
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(url), 5000);
+        } else {
+          window.print();
+        }
+      }
+
+      async function downloadStudentZipDossier(rec) {
+        if (!window.JSZip) {
+          alert('JSZip library not loaded. Check internet connection.');
+          return;
+        }
+        const zip = new JSZip();
+        const folderName = `${rec.candidateName10th.replace(/\s+/g, '_')}_${rec.Admission_ID}`;
+        const folder = zip.folder(folderName);
+
+        const sanitizedMeta = { ...rec, idNumber: maskId(rec.idNumber), docs: Object.keys(rec.docs || {}) };
+        folder.file('Admission_Record.json', JSON.stringify(sanitizedMeta, null, 2));
+
+        if (window.html2pdf) {
+          const element = document.getElementById('printable-resume');
+          const pdfBlob = await buildCompleteResumePdfBlob(element, rec);
+          if (pdfBlob) folder.file(`Resume_${rec.Admission_ID}.pdf`, pdfBlob);
+        }
+
+        // Package each uploaded document into the ZIP using exact raw binary bytes & matching extension
+        if (rec.docs) {
+          Object.entries(rec.docs).forEach(([docKey, doc]) => {
+            if (!doc) return;
+            let fileBytes = doc.binaryData instanceof Uint8Array ? doc.binaryData : null;
+            if (!fileBytes && doc.dataUrl && doc.dataUrl.startsWith('data:')) {
+              fileBytes = dataUrlToUint8Array(doc.dataUrl);
+            }
+            if (!fileBytes || fileBytes.byteLength === 0) return;
+
+            // Detect actual MIME type from dataUrl/metadata so extension always matches the binary header
+            let mime = doc.mimeType || '';
+            if (!mime && doc.dataUrl && doc.dataUrl.startsWith('data:')) {
+              mime = doc.dataUrl.slice(5, doc.dataUrl.indexOf(';'));
+            }
+            let safeName = doc.name || docKey;
+            if (mime === 'image/jpeg' && safeName.toLowerCase().endsWith('.pdf')) {
+              safeName = safeName.replace(/\.pdf$/i, '.jpg');
+            } else if (mime === 'image/png' && safeName.toLowerCase().endsWith('.pdf')) {
+              safeName = safeName.replace(/\.pdf$/i, '.png');
+            }
+
+            folder.file(safeName, fileBytes, { binary: true });
+          });
+        }
+
+        const content = await zip.generateAsync({ type: 'blob' });
+        const url = URL.createObjectURL(content);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${folderName}_Dossier.zip`;
+        a.click();
+      }
+
+      // --- ADMIN SEAT MATRIX & DASHBOARD ---
+      function renderSeatMatrix(allRecords) {
+        const matrixGrid = document.getElementById('seat-matrix-grid');
+        const quotaPills = document.getElementById('quota-summary-pills');
+
+        const quotaCounts = { KEA: 0, 'COMED-K': 0, KRLPMCA: 0, Management: 0, SNQ: 0 };
+        allRecords.forEach(r => {
+          if (quotaCounts[r.admissionMode] !== undefined) quotaCounts[r.admissionMode]++;
+          if (r.seatType === 'SNQ') quotaCounts.SNQ++;
+        });
+
+        quotaPills.innerHTML = Object.entries(quotaCounts)
+          .map(([k, v]) => `<span class="px-2.5 py-1 rounded bg-blue-50 text-blue-950 border border-blue-200">${k}: ${v}</span>`)
+          .join('');
+
+        const cards = [];
+        Object.entries(COURSE_CONFIG).forEach(([courseCode, cfg]) => {
+          cfg.branches.forEach(b => {
+            const admitted = allRecords.filter(r => r.course === courseCode && r.branch === b.name).length;
+            const pct = Math.min(100, Math.round((admitted / b.intake) * 100));
+            cards.push(`
+              <div class="border border-slate-200 rounded-lg p-3 bg-slate-50">
+                <div class="flex justify-between items-start gap-2">
+                  <span class="text-[11px] font-bold text-blue-950 leading-tight">${courseCode} — ${b.name}</span>
+                  <span class="text-xs font-mono font-bold text-slate-800 whitespace-nowrap">${admitted}/${b.intake}</span>
+                </div>
+                <div class="w-full bg-slate-200 h-1.5 rounded-full mt-2 overflow-hidden">
+                  <div class="bg-blue-900 h-1.5 rounded-full" style="width: ${pct}%"></div>
+                </div>
+              </div>
+            `);
+          });
+        });
+        matrixGrid.innerHTML = cards.join('');
+      }
+
+      function checkAdminSession() {
+        const session = JSON.parse(sessionStorage.getItem(STORAGE_KEYS.STAFF) || 'null');
+        document.getElementById('admin-login-box').classList.toggle('hidden', !!session);
+        document.getElementById('admin-dashboard').classList.toggle('hidden', !session);
+        if (session) {
+          document.getElementById('staff-session-badge').textContent =
+            `Logged in as: ${session.username} | Role: ${session.role}`;
+          renderAdminTable();
+          renderAuditLogTable();
+        }
+      }
+
+      function renderAdminTable() {
+        const session = JSON.parse(sessionStorage.getItem(STORAGE_KEYS.STAFF) || '{}');
+        const allRecords = JSON.parse(localStorage.getItem(STORAGE_KEYS.RECORDS) || '[]');
+        renderSeatMatrix(allRecords);
+
+        const filterCourse = document.getElementById('filter-course').value;
+        const searchQuery = (document.getElementById('search-student-input').value || '').trim().toUpperCase();
+
+        const records = allRecords.filter(r => {
+          const matchesCourse = filterCourse === 'ALL' || r.course === filterCourse;
+          const matchesSearch = !searchQuery ||
+            r.Admission_ID.includes(searchQuery) ||
+            r.candidateName10th.includes(searchQuery) ||
+            r.seatNumber.includes(searchQuery);
+          return matchesCourse && matchesSearch;
+        });
+
+        const canEdit = ['ADMIN', 'ADMISSION_OFFICER'].includes(session.role);
+        const tbody = document.getElementById('admin-student-tbody');
+
+        tbody.innerHTML = records.map(r => `
+          <tr class="hover:bg-slate-50">
+            <td class="p-3 font-bold text-blue-950">${r.Admission_ID}</td>
+            <td class="p-3 font-semibold">${r.candidateName10th}</td>
+            <td class="p-3">${r.programme} (${r.course}) — ${r.branch}</td>
+            <td class="p-3">${r.admissionMode} (#${r.rank})</td>
+            <td class="p-3">${r.allottedCategory}</td>
+            <td class="p-3 font-mono text-slate-600">${maskId(r.idNumber)}</td>
+            <td class="p-3 text-[11px] font-mono text-blue-800">${r.driveFolderPath}</td>
+            <td class="p-3 text-[11px]">Email: ${r.emailStatus}<br/>WA: ${r.whatsAppStatus}</td>
+            <td class="p-3 space-x-2 whitespace-nowrap">
+              <button type="button" data-view-pdf="${r.Admission_ID}" class="text-blue-700 font-semibold hover:underline cursor-pointer">PDF</button>
+              <button type="button" data-zip-rec="${r.Admission_ID}" class="text-indigo-700 font-semibold hover:underline cursor-pointer">ZIP</button>
+              ${canEdit ? `<button type="button" data-edit-rec="${r.Admission_ID}" class="text-amber-700 font-semibold hover:underline cursor-pointer">Edit</button>` : ''}
+            </td>
+          </tr>
+        `).join('');
+
+        tbody.querySelectorAll('[data-view-pdf]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.getAttribute('data-view-pdf');
+            const rec = allRecords.find(x => x.Admission_ID === id);
+            if (rec) {
+              renderResumePreview(rec);
+              switchView('resume');
+            }
+          });
+        });
+
+        tbody.querySelectorAll('[data-zip-rec]').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const id = btn.getAttribute('data-zip-rec');
+            const rec = allRecords.find(x => x.Admission_ID === id);
+            if (rec) {
+              renderResumePreview(rec);
+              await downloadStudentZipDossier(rec);
+            }
+          });
+        });
+
+        tbody.querySelectorAll('[data-edit-rec]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.getAttribute('data-edit-rec');
+            const rec = allRecords.find(x => x.Admission_ID === id);
+            if (!rec) return;
+            document.getElementById('edit-modal-id').textContent = id;
+            document.getElementById('edit-admission-id').value = id;
+            document.getElementById('edit-name').value = rec.candidateName10th;
+            document.getElementById('edit-branch').value = rec.branch;
+            document.getElementById('edit-category').value = rec.allottedCategory;
+            document.getElementById('edit-rank').value = rec.rank;
+            document.getElementById('edit-mobile').value = rec.mobile;
+            document.getElementById('edit-ssp').value = rec.sspId || '';
+            document.getElementById('edit-caste').value = rec.caste || '';
+            document.getElementById('edit-modal').classList.remove('hidden');
+          });
+        });
+      }
+
+      function renderAuditLogTable() {
+        const logs = JSON.parse(localStorage.getItem(STORAGE_KEYS.AUDIT) || '[]');
+        const tbody = document.getElementById('audit-log-tbody');
+        if (logs.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" class="p-3 text-slate-400 text-center">No edits recorded yet.</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = logs.map(l => `
+          <tr>
+            <td class="p-2 font-mono text-[11px]">${l.timestamp}</td>
+            <td class="p-2 font-bold">${l.admissionId}</td>
+            <td class="p-2">${l.staffUser}</td>
+            <td class="p-2 font-semibold text-blue-900">${l.field}</td>
+            <td class="p-2 text-red-700">${l.oldVal}</td>
+            <td class="p-2 text-emerald-700 font-semibold">${l.newVal}</td>
+          </tr>
+        `).join('');
+      }
+
+      function exportBranchCSV() {
+        const filterCourse = document.getElementById('filter-course').value;
+        const records = JSON.parse(localStorage.getItem(STORAGE_KEYS.RECORDS) || '[]')
+          .filter(r => filterCourse === 'ALL' || r.course === filterCourse);
+
+        const headers = ['Admission_ID', 'Candidate_Name', 'Programme', 'Course', 'Branch', 'Mode', 'Seat_Number', 'Rank', 'Category', 'Mobile', 'Email', 'Masked_ID', 'Drive_Folder'];
+        const rows = records.map(r => [
+          r.Admission_ID, `"${r.candidateName10th}"`, r.programme, r.course, `"${r.branch}"`, r.admissionMode,
+          r.seatNumber, r.rank, r.allottedCategory, r.mobile, r.email, maskId(r.idNumber), r.driveFolderPath
+        ].join(','));
+
+        const csv = [headers.join(','), ...rows].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Admissions_2026_${filterCourse}.csv`;
+        a.click();
+      }
+
+      // --- WIRE ALL LISTENERS ON DOM READY ---
+      document.addEventListener('DOMContentLoaded', () => {
+        seedPredefinedRecords();
+        updateSyncBanner();
+        startLiveAutoPolling();
+        updateCourseAndBranches();
+        renderDocumentUploadCards();
+        restoreDraft();
+        renderStepper();
+
+        // Top Navigation
+        document.getElementById('nav-student-btn').addEventListener('click', () => switchView('student'));
+        document.getElementById('nav-track-btn').addEventListener('click', () => switchView('track'));
+        document.getElementById('nav-admin-btn').addEventListener('click', () => switchView('admin'));
+
+        // Google Apps Script Setup Modal
+        document.getElementById('open-gas-modal-btn').addEventListener('click', () => {
+          document.getElementById('gas-url-input').value = localStorage.getItem(STORAGE_KEYS.GAS_URL) || '';
+          document.getElementById('gas-modal').classList.remove('hidden');
+        });
+        document.getElementById('close-gas-modal-btn').addEventListener('click', () => {
+          document.getElementById('gas-modal').classList.add('hidden');
+        });
+        document.getElementById('save-gas-url-btn').addEventListener('click', () => {
+          const val = document.getElementById('gas-url-input').value.trim();
+          if (val) localStorage.setItem(STORAGE_KEYS.GAS_URL, val);
+          else localStorage.removeItem(STORAGE_KEYS.GAS_URL);
+          updateSyncBanner();
+          document.getElementById('gas-modal').classList.add('hidden');
+        });
+        document.getElementById('copy-gas-code-btn').addEventListener('click', () => {
+          navigator.clipboard.writeText(document.getElementById('gas-code-block').textContent);
+          alert('Code.gs copied to clipboard!');
+        });
+
+        // Mobile Camera Scanner Controls
+        document.getElementById('open-camera-scanner-btn').addEventListener('click', () => {
+          openCameraScanner(document.getElementById('quick-scan-doc-select').value);
+        });
+        document.getElementById('close-scanner-modal-btn').addEventListener('click', closeCameraScanner);
+        document.getElementById('snap-photo-btn').addEventListener('click', snapDocumentFrame);
+        document.getElementById('retake-photo-btn').addEventListener('click', () => openCameraScanner(activeScanDocKey));
+        document.getElementById('confirm-scan-btn').addEventListener('click', confirmScannedDocument);
+
+        document.getElementById('fallback-native-camera-btn').addEventListener('click', () => {
+          const nativeInput = document.getElementById('native-camera-capture-input');
+          nativeInput.value = '';
+          nativeInput.click();
+        });
+
+        document.getElementById('native-camera-capture-input').addEventListener('change', (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          if (!file.type.startsWith('image/')) {
+            setScannerFeedback('Unsupported file type. Please capture or select a JPEG/PNG image.', true);
+            return;
+          }
+          const docMeta = REQUIRED_DOCS.find(d => d.key === activeScanDocKey) || REQUIRED_DOCS[2];
+          handleFileUpload(e, docMeta.key, docMeta.type);
+          closeCameraScanner();
+        });
+
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            if (!document.getElementById('camera-scanner-modal').classList.contains('hidden')) {
+              closeCameraScanner();
+            }
+            if (!document.getElementById('pre-submit-preview-modal').classList.contains('hidden')) {
+              document.getElementById('pre-submit-preview-modal').classList.add('hidden');
+            }
+          }
+        });
+
+        // Student Form Controls
+        document.getElementById('load-sample-btn').addEventListener('click', fillSampleData);
+        document.getElementById('reset-form-btn').addEventListener('click', clearDraft);
+        document.getElementById('course').addEventListener('change', () => { updateCourseAndBranches(); saveDraft(); });
+        document.getElementById('joiningSemester').addEventListener('change', () => { updateCourseAndBranches(); saveDraft(); });
+        document.getElementById('nationality').addEventListener('change', toggleForeignFields);
+        document.getElementById('religion').addEventListener('change', toggleOtherReligion);
+        document.getElementById('sslcBoard').addEventListener('change', toggleOtherBoards);
+        document.getElementById('pucBoard').addEventListener('change', toggleOtherBoards);
+
+        // Document Viewer Dropdown Switcher
+        document.getElementById('doc-viewer-select').addEventListener('change', (e) => {
+          if (e.target.value) refreshDocumentViewer(e.target.value);
+        });
+
+        // Pre-Submission Preview Modal Controls
+        document.getElementById('preview-resume-btn').addEventListener('click', openPreSubmitPreview);
+        document.getElementById('close-pre-submit-modal-btn').addEventListener('click', () => {
+          document.getElementById('pre-submit-preview-modal').classList.add('hidden');
+        });
+        document.getElementById('download-draft-pdf-btn').addEventListener('click', () => {
+          const draftRec = collectDraftRecordForPreview();
+          downloadOfficialPdf(draftRec, 'pre-submit-resume-container');
+        });
+        document.getElementById('sameAsPerm').addEventListener('change', copyPermAddress);
+        document.getElementById('applySsp').addEventListener('change', toggleSspInput);
+
+        ['hk371jClaim', 'kannadaMedClaim', 'casteResClaim'].forEach(id => {
+          document.getElementById(id).addEventListener('change', renderDocumentUploadCards);
+        });
+
+        ['sub1Marks', 'sub2Marks', 'sub3Marks'].forEach(id => {
+          document.getElementById(id).addEventListener('input', calcPCM);
+        });
+
+        ['sslcObtainedMarks', 'sslcMaxMarks'].forEach(id => {
+          document.getElementById(id).addEventListener('input', calcPercentages);
+        });
+
+        document.getElementById('prev-btn').addEventListener('click', () => changeStep(-1));
+        document.getElementById('next-btn').addEventListener('click', () => changeStep(1));
+
+        document.getElementById('admission-form').addEventListener('input', saveDraft);
+        document.getElementById('admission-form').addEventListener('change', saveDraft);
+
+        document.getElementById('admission-form').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          if (!validateStep(5)) return;
+
+          const submitBtn = document.getElementById('submit-btn');
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Syncing & Generating PDF...';
+
+          const fd = new FormData(e.target);
+          const data = Object.fromEntries(fd.entries());
+          const records = JSON.parse(localStorage.getItem(STORAGE_KEYS.RECORDS) || '[]');
+
+          const admissionId = `2026${String(records.length + 1837).padStart(6, '0')}`;
+          const branchSlug = data.branch.replace(/[^a-zA-Z0-9]+/g, '_');
+          const nameSlug = data.candidateName10th.trim().toUpperCase().replace(/\s+/g, '_');
+
+          const newRecord = {
+            ...data,
+            Admission_ID: admissionId,
+            Submitted_At: new Date().toISOString(),
+            candidateName10th: data.candidateName10th.toUpperCase(),
+            candidateNameId: data.candidateNameId.toUpperCase(),
+            fatherName: data.fatherName.toUpperCase(),
+            motherName: data.motherName.toUpperCase(),
+            seatNumber: data.seatNumber.toUpperCase(),
+            idNumber: maskId(data.idNumber),
+            driveFolderPath: `/Admissions2026/${data.course}/${branchSlug}/${nameSlug}_${admissionId}/`,
+            emailStatus: `SENT (${data.email})`,
+            whatsAppStatus: `DELIVERED (+91-${data.whatsappMobile})`,
+            docs: uploadedDocs
+          };
+
+          const cloudRes = await syncRecordToGoogleAppsScript({ ...newRecord, rawIdForGovSync: data.idNumber });
+          if (cloudRes.synced && cloudRes.driveUrl) {
+            newRecord.driveFolderPath = cloudRes.driveUrl;
+          }
+
+          records.push(newRecord);
+          localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(records));
+          localStorage.removeItem(STORAGE_KEYS.DRAFT);
+
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Submit & Sync to Cloud';
+
+          renderResumePreview(newRecord);
+          switchView('resume');
+        });
+
+        // Resume View Action Buttons
+        document.getElementById('download-pdf-btn').addEventListener('click', () => {
+          if (activePreviewRecord) downloadOfficialPdf(activePreviewRecord);
+        });
+        document.getElementById('download-zip-btn').addEventListener('click', () => {
+          if (activePreviewRecord) downloadStudentZipDossier(activePreviewRecord);
+        });
+        document.getElementById('print-resume-btn').addEventListener('click', () => window.print());
+        document.getElementById('back-to-form-btn').addEventListener('click', () => {
+          clearDraft();
+          switchView('student');
+        });
+
+        // Student Track & Reprint Lookup (syncs latest cloud records first)
+        document.getElementById('track-lookup-form').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const submitBtn = e.target.querySelector('button[type="submit"]');
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Checking Cloud Records...';
+          }
+          await fetchLiveCloudRecords(true);
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Retrieve Admission Resume';
+          }
+          const query = document.getElementById('trackQueryId').value.trim().toUpperCase();
+          const dob = document.getElementById('trackDob').value;
+          const records = JSON.parse(localStorage.getItem(STORAGE_KEYS.RECORDS) || '[]');
+          const match = records.find(r => (String(r.Admission_ID).toUpperCase() === query || String(r.seatNumber).toUpperCase() === query) && r.dob === dob);
+          const errEl = document.getElementById('track-error');
+          if (!match) {
+            errEl.textContent = 'No matching admission record found for the entered ID/Seat Number and DOB.';
+            errEl.classList.remove('hidden');
+            return;
+          }
+          errEl.classList.add('hidden');
+          renderResumePreview(match);
+          switchView('resume');
+        });
+
+        // Admin Login & Dashboard Controls
+        document.getElementById('admin-login-form').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const session = {
+            username: document.getElementById('staffUser').value.trim(),
+            role: document.getElementById('staffRoleSelect').value
+          };
+          sessionStorage.setItem(STORAGE_KEYS.STAFF, JSON.stringify(session));
+          checkAdminSession();
+        });
+
+        document.getElementById('admin-logout-btn').addEventListener('click', () => {
+          sessionStorage.removeItem(STORAGE_KEYS.STAFF);
+          checkAdminSession();
+        });
+
+        document.getElementById('filter-course').addEventListener('change', renderAdminTable);
+        document.getElementById('search-student-input').addEventListener('input', renderAdminTable);
+        document.getElementById('export-csv-btn').addEventListener('click', exportBranchCSV);
+
+        document.getElementById('pull-cloud-btn').addEventListener('click', async () => {
+          const gasUrl = getActiveGasUrl();
+          if (!gasUrl) {
+            alert('Configure your Google Apps Script Web App URL in the top bar or set DEFAULT_GAS_WEB_APP_URL first.');
+            return;
+          }
+          const btn = document.getElementById('pull-cloud-btn');
+          btn.disabled = true;
+          btn.textContent = 'Syncing...';
+          const result = await fetchLiveCloudRecords(false);
+          btn.disabled = false;
+          btn.textContent = 'Sync From Google Sheet';
+          if (result.ok) {
+            alert(`Synced successfully with Google Sheet! Cloud records loaded: ${result.count}`);
+          } else {
+            alert('Could not fetch from Google Apps Script URL: ' + (result.error || 'Check deployment permissions'));
+          }
+        });
+
+        // Edit Modal Controls
+        document.getElementById('cancel-edit-btn').addEventListener('click', () => {
+          document.getElementById('edit-modal').classList.add('hidden');
+        });
+
+        document.getElementById('edit-record-form').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const session = JSON.parse(sessionStorage.getItem(STORAGE_KEYS.STAFF) || '{}');
+          const id = document.getElementById('edit-admission-id').value;
+          const records = JSON.parse(localStorage.getItem(STORAGE_KEYS.RECORDS) || '[]');
+          const idx = records.findIndex(r => r.Admission_ID === id);
+          if (idx === -1) return;
+
+          const oldRec = { ...records[idx] };
+          const updates = {
+            candidateName10th: document.getElementById('edit-name').value.trim().toUpperCase(),
+            branch: document.getElementById('edit-branch').value.trim().toUpperCase(),
+            allottedCategory: document.getElementById('edit-category').value.trim().toUpperCase(),
+            rank: document.getElementById('edit-rank').value.trim(),
+            mobile: document.getElementById('edit-mobile').value.trim(),
+            sspId: document.getElementById('edit-ssp').value.trim(),
+            caste: document.getElementById('edit-caste').value.trim()
+          };
+
+          const auditLogs = JSON.parse(localStorage.getItem(STORAGE_KEYS.AUDIT) || '[]');
+          const newAuditEntries = [];
+          const timestamp = new Date().toISOString();
+
+          Object.entries(updates).forEach(([field, newVal]) => {
+            if (String(oldRec[field] || '') !== String(newVal || '')) {
+              const entry = {
+                timestamp,
+                admissionId: id,
+                staffUser: `${session.username} (${session.role})`,
+                field,
+                oldVal: oldRec[field] || '(empty)',
+                newVal: newVal || '(empty)'
+              };
+              auditLogs.unshift(entry);
+              newAuditEntries.push(entry);
+            }
+          });
+
+          const resend = document.getElementById('edit-resend-check').checked;
+          records[idx] = {
+            ...oldRec,
+            ...updates,
+            emailStatus: resend ? `RESENT (${timestamp.slice(0, 10)})` : oldRec.emailStatus,
+            whatsAppStatus: resend ? `RESENT (${timestamp.slice(0, 10)})` : oldRec.whatsAppStatus
+          };
+
+          localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(records));
+          localStorage.setItem(STORAGE_KEYS.AUDIT, JSON.stringify(auditLogs));
+          await syncRecordToGoogleAppsScript({ ...records[idx], auditEntries: newAuditEntries });
+
+          document.getElementById('edit-modal').classList.add('hidden');
+          renderAdminTable();
+          renderAuditLogTable();
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
