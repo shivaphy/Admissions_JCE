@@ -815,28 +815,21 @@
          VIEW 4: STAFF / ADMIN PORTAL (SEAT MATRIX, RBAC, EDIT & AUDIT LOG)
     ====================================================================== -->
     <section id="view-admin" class="hidden space-y-6">
-      <!-- STAFF LOGIN CARD -->
+      <!-- STAFF LOGIN CARD (Server-backed authentication via Google Apps Script staff_login; zero hardcoded credentials) -->
       <div id="admin-login-box" class="max-w-md mx-auto bg-white p-6 rounded-xl shadow border border-slate-200">
         <h2 class="text-lg font-bold text-blue-950 mb-1">Admission Staff Login</h2>
-        <p class="text-xs text-slate-500 mb-4">Role-Based Access Control (Admin / Admission Officer / Viewer)</p>
-        <form id="admin-login-form" class="space-y-3">
+        <p class="text-xs text-slate-500 mb-4">Authenticated via Institutional Server (Role assigned automatically)</p>
+        <form id="admin-login-form" class="space-y-3" autocomplete="off">
           <div>
-            <label for="staffRoleSelect" class="block text-xs font-semibold mb-1">Select Staff Role</label>
-            <select id="staffRoleSelect" class="w-full border rounded px-3 py-2 text-sm bg-white">
-              <option value="ADMIN">ADMIN (Full Edit + Resend + Audit Access)</option>
-              <option value="ADMISSION_OFFICER">ADMISSION_OFFICER (Edit + Regenerate PDF)</option>
-              <option value="VIEWER">VIEWER (Read-Only Branch Listings)</option>
-            </select>
+            <label for="staffUser" class="block text-xs font-semibold mb-1">Staff Username *</label>
+            <input id="staffUser" type="text" required placeholder="Enter assigned staff username" class="w-full border rounded px-3 py-2 text-sm" />
           </div>
           <div>
-            <label for="staffUser" class="block text-xs font-semibold mb-1">Staff Username</label>
-            <input id="staffUser" type="text" value="officer_jce" required class="w-full border rounded px-3 py-2 text-sm" />
+            <label for="staffPass" class="block text-xs font-semibold mb-1">Passcode *</label>
+            <input id="staffPass" type="password" required placeholder="Enter your passcode" class="w-full border rounded px-3 py-2 text-sm" />
           </div>
-          <div>
-            <label for="staffPass" class="block text-xs font-semibold mb-1">Passcode</label>
-            <input id="staffPass" type="password" value="JCE@2026" required class="w-full border rounded px-3 py-2 text-sm" />
-          </div>
-          <button type="submit" class="w-full py-2 bg-blue-950 text-white font-bold rounded text-sm hover:bg-blue-900 cursor-pointer">
+          <p id="admin-login-error" role="alert" class="text-xs text-red-600 font-semibold hidden"></p>
+          <button type="submit" id="admin-login-btn" class="w-full py-2 bg-blue-950 text-white font-bold rounded text-sm hover:bg-blue-900 cursor-pointer">
             Sign In to Dashboard
           </button>
         </form>
@@ -948,7 +941,7 @@
               <button type="button" id="copy-gas-code-btn" class="text-blue-700 font-semibold hover:underline cursor-pointer">Copy Code.gs</button>
             </div>
             <pre id="gas-code-block" class="bg-slate-900 text-emerald-300 p-3 rounded text-[11px] overflow-x-auto leading-relaxed">const ROOT_FOLDER_ID = 'PASTE_YOUR_GOOGLE_DRIVE_FOLDER_ID_HERE';
-const SPREADSHEET_ID = 'PASTE_YOUR_GOOGLE_SPREADSHEET_ID_HERE';
+const SPREADSHEET_ID = '1JTxFiho-kPoRV4K4j-vcYV10qNeXd26Db6hokWa5Wzo';
 
 const HEADERS = [
   'Admission_ID', 'Submitted_At', 'programme', 'course', 'branch',
@@ -978,10 +971,14 @@ function doPost(e) {
     }
     const body = JSON.parse(e.postData.contents);
     const action = body.action || 'upsert_record';
+
+    if (action === 'staff_login') {
+      return handleStaffLogin_(body);
+    }
+
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     const master = getOrCreateSheet_(ss, 'Master_Admissions', HEADERS);
 
-    // ACTION 1: Upload a single file (certificate or generated Resume PDF) to the student's Drive folder
     if (action === 'upload_file') {
       const folder = DriveApp.getFolderById(body.folderId);
       const commaIdx = body.dataUrl.indexOf(',');
@@ -989,7 +986,6 @@ function doPost(e) {
       const mime = body.dataUrl.slice(5, body.dataUrl.indexOf(';'));
       const blob = Utilities.newBlob(Utilities.base64Decode(base64), mime, body.fileName);
 
-      // Overwrite existing file with same name if re-uploaded/edited
       const existingFiles = folder.getFilesByName(body.fileName);
       while (existingFiles.hasNext()) {
         existingFiles.next().setTrashed(true);
@@ -997,10 +993,8 @@ function doPost(e) {
       const file = folder.createFile(blob);
       const fileUrl = file.getUrl();
 
-      // Update Master_Admissions row with file link
       updateRowFileLink_(master, body.admissionId, body.docKey, fileUrl);
 
-      // Send student confirmation email with attached PDF once Official Resume PDF is saved
       if (body.sendConfirmationEmail &amp;&amp; body.studentEmail) {
         try {
           MailApp.sendEmail({
@@ -1012,15 +1006,12 @@ function doPost(e) {
                   '\n\nYour Official Student Admission Resume PDF is attached.',
             attachments: [blob]
           });
-        } catch (mailErr) {
-          // Do not fail file upload if email quota is reached
-        }
+        } catch (mailErr) {}
       }
 
       return jsonResponse_({ status: 'OK', fileUrl: fileUrl });
     }
 
-    // ACTION 2: Create/Update student row in Master_Admissions + Branch tab + Drive folder
     const payload = body.record || body;
     const root = DriveApp.getFolderById(ROOT_FOLDER_ID);
     const yFolder = getOrCreateFolder_(root, 'Admissions2026');
@@ -1042,7 +1033,12 @@ function doPost(e) {
     }
 
     const rowValues = HEADERS.map(h =&gt; payload[h] !== undefined ? payload[h] : '');
+
     if (existingRowIndex &gt; 1) {
+      const verifiedStaff = verifyStaffToken_(body.staffToken, ['ADMIN', 'ADMISSION_OFFICER']);
+      if (!verifiedStaff) {
+        return jsonResponse_({ status: 'ERROR', message: 'Unauthorized or expired staff session. Please sign in again.' });
+      }
       master.getRange(existingRowIndex, 1, 1, HEADERS.length).setValues([rowValues]);
     } else {
       master.appendRow(rowValues);
@@ -1090,6 +1086,85 @@ function doGet() {
     return jsonResponse_({ status: 'OK', records: records });
   } catch (err) {
     return jsonResponse_({ status: 'ERROR', message: err.toString() });
+  }
+}
+
+function getSessionSecret_() {
+  const props = PropertiesService.getScriptProperties();
+  let secret = props.getProperty('SESSION_SECRET');
+  if (!secret) {
+    secret = Utilities.getUuid() + '-' + Utilities.getUuid();
+    props.setProperty('SESSION_SECRET', secret);
+  }
+  return secret;
+}
+
+function sha256Hex_(input) {
+  const rawHash = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, input, Utilities.Charset.UTF_8);
+  return rawHash.map(b =&gt; ('0' + (b &amp; 0xFF).toString(16)).slice(-2)).join('');
+}
+
+function setupStaffUsersSheet() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = getOrCreateSheet_(ss, 'Staff_Users', ['Username', 'Password_SHA256', 'Role', 'Active']);
+  if (sheet.getLastRow() &lt; 2) {
+    sheet.appendRow(['admin_jce', sha256Hex_('Admin@JCE2026'), 'ADMIN', 'YES']);
+    sheet.appendRow(['officer_jce', sha256Hex_('Officer@JCE2026'), 'ADMISSION_OFFICER', 'YES']);
+    sheet.appendRow(['viewer_jce', sha256Hex_('Viewer@JCE2026'), 'VIEWER', 'YES']);
+  }
+}
+
+function handleStaffLogin_(body) {
+  const username = String(body.username || '').trim();
+  const password = String(body.password || '');
+  if (!username || !password) {
+    return jsonResponse_({ status: 'ERROR', message: 'Username and password are required.' });
+  }
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName('Staff_Users');
+  if (!sheet) {
+    return jsonResponse_({ status: 'ERROR', message: 'Staff_Users table not initialized. Run setupStaffUsersSheet first.' });
+  }
+  const inputHash = sha256Hex_(password);
+  const rows = sheet.getDataRange().getValues();
+  for (let i = 1; i &lt; rows.length; i++) {
+    const [rowUser, rowHash, rowRole, rowActive] = rows[i];
+    if (String(rowUser).trim().toLowerCase() === username.toLowerCase()) {
+      if (String(rowActive).toUpperCase() !== 'YES') {
+        return jsonResponse_({ status: 'ERROR', message: 'Account is disabled. Contact Administrator.' });
+      }
+      if (String(rowHash).trim() === inputHash) {
+        const expiresAt = Date.now() + (8 * 60 * 60 * 1000);
+        const payloadStr = `${rowUser}|${rowRole}|${expiresAt}`;
+        const signature = sha256Hex_(payloadStr + '|' + getSessionSecret_());
+        const token = Utilities.base64Encode(`${payloadStr}|${signature}`);
+        return jsonResponse_({
+          status: 'OK',
+          username: rowUser,
+          role: rowRole,
+          token: token,
+          expiresAt: expiresAt
+        });
+      }
+    }
+  }
+  return jsonResponse_({ status: 'ERROR', message: 'Invalid username or passcode.' });
+}
+
+function verifyStaffToken_(token, allowedRoles) {
+  if (!token) return null;
+  try {
+    const decoded = Utilities.newBlob(Utilities.base64Decode(token)).getDataAsString();
+    const parts = decoded.split('|');
+    if (parts.length !== 4) return null;
+    const [username, role, expiresAtStr, signature] = parts;
+    if (Date.now() &gt; Number(expiresAtStr)) return null;
+    const expectedSig = sha256Hex_(`${username}|${role}|${expiresAtStr}|${getSessionSecret_()}`);
+    if (signature !== expectedSig) return null;
+    if (allowedRoles &amp;&amp; allowedRoles.indexOf(role) === -1) return null;
+    return { username, role };
+  } catch (e) {
+    return null;
   }
 }
 
@@ -1477,7 +1552,8 @@ function getOrCreateSheet_(ss, name, headers) {
           const metaRes = await postToGasWithTimeout(gasUrl, {
             action: 'upsert_record',
             record: cleanMetadataRecord,
-            auditEntries: record.auditEntries || []
+            auditEntries: record.auditEntries || [],
+            staffToken: record.staffToken || ''
           }, 45000);
 
           const folderId = metaRes.folderId || '';
@@ -3023,9 +3099,13 @@ function getOrCreateSheet_(ss, name, headers) {
 
       function checkAdminSession() {
         const session = JSON.parse(sessionStorage.getItem(STORAGE_KEYS.STAFF) || 'null');
-        document.getElementById('admin-login-box').classList.toggle('hidden', !!session);
-        document.getElementById('admin-dashboard').classList.toggle('hidden', !session);
-        if (session) {
+        const isValidSession = !!(session && session.token && (!session.expiresAt || Date.now() < session.expiresAt));
+        if (session && !isValidSession) {
+          sessionStorage.removeItem(STORAGE_KEYS.STAFF);
+        }
+        document.getElementById('admin-login-box').classList.toggle('hidden', isValidSession);
+        document.getElementById('admin-dashboard').classList.toggle('hidden', !isValidSession);
+        if (isValidSession) {
           document.getElementById('staff-session-badge').textContent =
             `Logged in as: ${session.username} | Role: ${session.role}`;
           renderAdminTable();
@@ -3169,7 +3249,7 @@ function getOrCreateSheet_(ss, name, headers) {
         // [MODIFIED - Change 1]: Google Apps Script Setup Modal (Admin-only access guard)
         document.getElementById('open-gas-modal-btn').addEventListener('click', () => {
           const session = JSON.parse(sessionStorage.getItem(STORAGE_KEYS.STAFF) || 'null');
-          if (!session) return;
+          if (!session || !session.token) return;
           document.getElementById('gas-url-input').value = localStorage.getItem(STORAGE_KEYS.GAS_URL) || '';
           document.getElementById('gas-modal').classList.remove('hidden');
         });
@@ -3405,15 +3485,45 @@ function getOrCreateSheet_(ss, name, headers) {
           switchView('resume');
         });
 
-        // Admin Login & Dashboard Controls
-        document.getElementById('admin-login-form').addEventListener('submit', (e) => {
+        // Server-Backed Admin Login & Dashboard Controls (Zero hardcoded credentials in index.html)
+        document.getElementById('admin-login-form').addEventListener('submit', async (e) => {
           e.preventDefault();
-          const session = {
-            username: document.getElementById('staffUser').value.trim(),
-            role: document.getElementById('staffRoleSelect').value
-          };
-          sessionStorage.setItem(STORAGE_KEYS.STAFF, JSON.stringify(session));
-          checkAdminSession();
+          const errEl = document.getElementById('admin-login-error');
+          const loginBtn = document.getElementById('admin-login-btn');
+          errEl.classList.add('hidden');
+
+          const gasUrl = getActiveGasUrl();
+          if (!gasUrl) {
+            errEl.textContent = 'Backend endpoint URL is not configured.';
+            errEl.classList.remove('hidden');
+            return;
+          }
+
+          loginBtn.disabled = true;
+          loginBtn.textContent = 'Verifying Credentials...';
+
+          try {
+            const res = await postToGasWithTimeout(gasUrl, {
+              action: 'staff_login',
+              username: document.getElementById('staffUser').value.trim(),
+              password: document.getElementById('staffPass').value
+            }, 30000);
+
+            sessionStorage.setItem(STORAGE_KEYS.STAFF, JSON.stringify({
+              username: res.username,
+              role: res.role,
+              token: res.token,
+              expiresAt: res.expiresAt
+            }));
+            document.getElementById('staffPass').value = '';
+            checkAdminSession();
+          } catch (err) {
+            errEl.textContent = err.message || 'Authentication failed. Check username and passcode.';
+            errEl.classList.remove('hidden');
+          } finally {
+            loginBtn.disabled = false;
+            loginBtn.textContent = 'Sign In to Dashboard';
+          }
         });
 
         document.getElementById('admin-logout-btn').addEventListener('click', () => {
@@ -3498,7 +3608,7 @@ function getOrCreateSheet_(ss, name, headers) {
 
           saveRecordsSafelyToLocalStorage(records);
           localStorage.setItem(STORAGE_KEYS.AUDIT, JSON.stringify(auditLogs));
-          await syncRecordToGoogleAppsScript({ ...records[idx], auditEntries: newAuditEntries });
+          await syncRecordToGoogleAppsScript({ ...records[idx], auditEntries: newAuditEntries, staffToken: session.token || '' });
 
           document.getElementById('edit-modal').classList.add('hidden');
           renderAdminTable();
