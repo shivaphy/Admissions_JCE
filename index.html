@@ -1027,39 +1027,71 @@ const HEADERS = [
   'diplomaRegNo', 'diplomaPassMonthYear', 'diplomaObtainedMarks', 'diplomaMaxMarks',
   'degreeRegNo', 'degreePassMonthYear', 'degreeObtainedMarks', 'degreeMaxMarks',
   'hk371jClaim', 'kannadaMedClaim', 'casteResClaim', 'applySsp', 'sspId',
-  'driveFolderPath', 'emailStatus', 'whatsAppStatus', 'docLinksJson'
+  'driveFolderPath', 'resumePdfDriveUrl', 'emailStatus', 'whatsAppStatus', 'docLinksJson'
 ];
 
 function doPost(e) {
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
-    const payload = JSON.parse(e.postData.contents);
+    if (!e || !e.postData || !e.postData.contents) {
+      throw new Error('Empty POST body received.');
+    }
+    const body = JSON.parse(e.postData.contents);
+    const action = body.action || 'upsert_record';
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     const master = getOrCreateSheet_(ss, 'Master_Admissions', HEADERS);
 
-    const root = DriveApp.getFolderById(ROOT_FOLDER_ID);
-    const yFolder = getOrCreateFolder_(root, 'Admissions2026');
-    const cFolder = getOrCreateFolder_(yFolder, payload.course);
-    const bFolder = getOrCreateFolder_(cFolder, payload.branch);
-    const sFolder = getOrCreateFolder_(bFolder, payload.candidateName10th + '_' + payload.Admission_ID);
+    // ACTION 1: Upload a single file (certificate or generated Resume PDF) to the student's Drive folder
+    if (action === 'upload_file') {
+      const folder = DriveApp.getFolderById(body.folderId);
+      const commaIdx = body.dataUrl.indexOf(',');
+      const base64 = commaIdx !== -1 ? body.dataUrl.slice(commaIdx + 1) : body.dataUrl;
+      const mime = body.dataUrl.slice(5, body.dataUrl.indexOf(';'));
+      const blob = Utilities.newBlob(Utilities.base64Decode(base64), mime, body.fileName);
 
-    const docLinks = {};
-    if (payload.docs) {
-      Object.keys(payload.docs).forEach(key =&gt; {
-        const doc = payload.docs[key];
-        if (doc &amp;&amp; doc.dataUrl &amp;&amp; doc.dataUrl.startsWith('data:')) {
-          const base64 = doc.dataUrl.split(',')[1];
-          const mime = doc.dataUrl.split(';')[0].split(':')[1];
-          const blob = Utilities.newBlob(Utilities.base64Decode(base64), mime, doc.name);
-          const file = sFolder.createFile(blob);
-          docLinks[key] = file.getUrl();
+      // Overwrite existing file with same name if re-uploaded/edited
+      const existingFiles = folder.getFilesByName(body.fileName);
+      while (existingFiles.hasNext()) {
+        existingFiles.next().setTrashed(true);
+      }
+      const file = folder.createFile(blob);
+      const fileUrl = file.getUrl();
+
+      // Update Master_Admissions row with file link
+      updateRowFileLink_(master, body.admissionId, body.docKey, fileUrl);
+
+      // Send student confirmation email with attached PDF once Official Resume PDF is saved
+      if (body.sendConfirmationEmail &amp;&amp; body.studentEmail) {
+        try {
+          MailApp.sendEmail({
+            to: body.studentEmail,
+            subject: 'Admission Confirmation &amp; Resume Copy - ' + body.admissionId + ' (' + body.studentName + ')',
+            body: 'Dear ' + body.studentName + ',\n\nYour admission details for ' + body.course +
+                  ' (' + body.branch + ') at Jain College of Engineering, Belagavi have been recorded.\n' +
+                  'Admission ID: ' + body.admissionId + '\nDrive Folder: ' + folder.getUrl() +
+                  '\n\nYour Official Student Admission Resume PDF is attached.',
+            attachments: [blob]
+          });
+        } catch (mailErr) {
+          // Do not fail file upload if email quota is reached
         }
-      });
+      }
+
+      return jsonResponse_({ status: 'OK', fileUrl: fileUrl });
     }
 
+    // ACTION 2: Create/Update student row in Master_Admissions + Branch tab + Drive folder
+    const payload = body.record || body;
+    const root = DriveApp.getFolderById(ROOT_FOLDER_ID);
+    const yFolder = getOrCreateFolder_(root, 'Admissions2026');
+    const cFolder = getOrCreateFolder_(yFolder, payload.course || 'GENERAL');
+    const bFolder = getOrCreateFolder_(cFolder, payload.branch || 'GENERAL');
+    const safeStudent = String(payload.candidateName10th || 'STUDENT').replace(/[^a-zA-Z0-9_ ]/g, '').trim().replace(/\s+/g, '_');
+    const sFolder = getOrCreateFolder_(bFolder, safeStudent + '_' + payload.Admission_ID);
+
     payload.driveFolderPath = sFolder.getUrl();
-    payload.docLinksJson = JSON.stringify(docLinks);
+    payload.emailStatus = payload.email ? 'SENT (' + payload.email + ')' : 'N/A';
 
     const data = master.getDataRange().getValues();
     let existingRowIndex = -1;
@@ -1077,55 +1109,73 @@ function doPost(e) {
       master.appendRow(rowValues);
     }
 
-    const branchTabName = (payload.course + '_' + payload.branch).replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 30);
+    const branchTabName = (String(payload.course) + '_' + String(payload.branch)).replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 30);
     const branchSheet = getOrCreateSheet_(ss, branchTabName, HEADERS);
-    if (existingRowIndex === -1) branchSheet.appendRow(rowValues);
+    if (existingRowIndex === -1) {
+      branchSheet.appendRow(rowValues);
+    }
 
-    if (payload.auditEntries &amp;&amp; payload.auditEntries.length &gt; 0) {
+    if (body.auditEntries &amp;&amp; body.auditEntries.length &gt; 0) {
       const auditSheet = getOrCreateSheet_(ss, 'Audit_Log', ['Timestamp', 'Admission_ID', 'Staff_User', 'Field', 'Old_Value', 'New_Value']);
-      payload.auditEntries.forEach(a =&gt; {
+      body.auditEntries.forEach(a =&gt; {
         auditSheet.appendRow([a.timestamp, a.admissionId, a.staffUser, a.field, a.oldVal, a.newVal]);
       });
     }
 
-    if (payload.email &amp;&amp; existingRowIndex === -1) {
-      MailApp.sendEmail({
-        to: payload.email,
-        subject: 'Admission Confirmation - ' + payload.Admission_ID + ' (' + payload.candidateName10th + ')',
-        body: 'Dear ' + payload.candidateName10th + ',\n\nYour admission for ' + payload.course +
-              ' (' + payload.branch + ') is confirmed.\nAdmission ID: ' + payload.Admission_ID +
-              '\nDocument Folder: ' + sFolder.getUrl()
-      });
-    }
-
-    return ContentService.createTextOutput(JSON.stringify({
+    return jsonResponse_({
       status: 'OK',
-      driveUrl: sFolder.getUrl(),
-      docLinks: docLinks
-    })).setMimeType(ContentService.MimeType.JSON);
+      folderId: sFolder.getId(),
+      driveUrl: sFolder.getUrl()
+    });
   } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ status: 'ERROR', message: err.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return jsonResponse_({ status: 'ERROR', message: err.toString() });
   } finally {
     lock.releaseLock();
   }
 }
 
 function doGet() {
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  const sheet = ss.getSheetByName('Master_Admissions');
-  if (!sheet || sheet.getLastRow() &lt; 2) {
-    return ContentService.createTextOutput(JSON.stringify({ status: 'OK', records: [] }))
-      .setMimeType(ContentService.MimeType.JSON);
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName('Master_Admissions');
+    if (!sheet || sheet.getLastRow() &lt; 2) {
+      return jsonResponse_({ status: 'OK', records: [] });
+    }
+    const values = sheet.getDataRange().getValues();
+    const headers = values[0];
+    const records = values.slice(1).map(row =&gt; {
+      const obj = {};
+      headers.forEach((h, idx) =&gt; { obj[h] = row[idx]; });
+      return obj;
+    });
+    return jsonResponse_({ status: 'OK', records: records });
+  } catch (err) {
+    return jsonResponse_({ status: 'ERROR', message: err.toString() });
   }
-  const values = sheet.getDataRange().getValues();
-  const headers = values[0];
-  const records = values.slice(1).map(row =&gt; {
-    const obj = {};
-    headers.forEach((h, idx) =&gt; { obj[h] = row[idx]; });
-    return obj;
-  });
-  return ContentService.createTextOutput(JSON.stringify({ status: 'OK', records: records }))
+}
+
+function updateRowFileLink_(sheet, admissionId, docKey, fileUrl) {
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const resumeCol = headers.indexOf('resumePdfDriveUrl') + 1;
+  const linksCol = headers.indexOf('docLinksJson') + 1;
+  for (let i = 1; i &lt; data.length; i++) {
+    if (String(data[i][0]) === String(admissionId)) {
+      if (docKey === 'generatedResumePdf' &amp;&amp; resumeCol &gt; 0) {
+        sheet.getRange(i + 1, resumeCol).setValue(fileUrl);
+      } else if (linksCol &gt; 0) {
+        let map = {};
+        try { map = JSON.parse(data[i][linksCol - 1] || '{}'); } catch (e) {}
+        map[docKey] = fileUrl;
+        sheet.getRange(i + 1, linksCol).setValue(JSON.stringify(map));
+      }
+      break;
+    }
+  }
+}
+
+function jsonResponse_(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
 }
 
@@ -1343,11 +1393,8 @@ function getOrCreateSheet_(ss, name, headers) {
 
       function getActiveGasUrl() {
         const override = (localStorage.getItem(STORAGE_KEYS.GAS_URL) || '').trim();
-        if (override) return override;
-        if (DEFAULT_GAS_WEB_APP_URL && !DEFAULT_GAS_WEB_APP_URL.includes('YOUR_DEPLOYED_SCRIPT_ID')) {
-          return DEFAULT_GAS_WEB_APP_URL;
-        }
-        return '';
+        if (override && override.startsWith('https://script.google.com/')) return override;
+        return DEFAULT_GAS_WEB_APP_URL || '';
       }
 
       function updateSyncBanner(lastSyncedTime) {
@@ -1364,23 +1411,128 @@ function getOrCreateSheet_(ss, name, headers) {
         }
       }
 
-      async function syncRecordToGoogleAppsScript(record) {
-        const gasUrl = getActiveGasUrl();
-        if (!gasUrl) return { synced: false };
+      /**
+       * Helper: POST a single JSON payload as a CORS-safe simple request (text/plain;charset=utf-8)
+       * with redirect:'follow' and a hard AbortController timeout so the UI never hangs indefinitely.
+       */
+      async function postToGasWithTimeout(gasUrl, payloadObj, timeoutMs = 60000) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
         try {
           const res = await fetch(gasUrl, {
             method: 'POST',
+            mode: 'cors',
+            redirect: 'follow',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(record)
+            body: JSON.stringify(payloadObj),
+            signal: controller.signal
           });
-          const json = await res.json();
-          if (json.status === 'OK') {
-            updateSyncBanner(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+          const rawText = await res.text();
+          let json;
+          try {
+            json = JSON.parse(rawText);
+          } catch (parseErr) {
+            throw new Error(
+              'Apps Script returned HTML instead of JSON (check that Web App is deployed as Execute as: Me, Who has access: Anyone).'
+            );
           }
-          return { synced: json.status === 'OK', driveUrl: json.driveUrl, docLinks: json.docLinks };
+          if (!res.ok || json.status !== 'OK') {
+            throw new Error(json.message || `Apps Script HTTP ${res.status}`);
+          }
+          return json;
         } catch (err) {
-          console.warn('Cloud sync fallback to local:', err);
-          return { synced: false };
+          if (err.name === 'AbortError') {
+            throw new Error('Cloud sync timed out after 60 seconds. Please check your internet connection and retry.');
+          }
+          throw err;
+        } finally {
+          clearTimeout(timer);
+        }
+      }
+
+      /**
+       * Chunked Cloud Sync:
+       * Step A: Sends lightweight student record metadata first (~4 KB) so the Google Sheet row & Drive folder are created immediately.
+       * Step B: Uploads each document & the generated Official Admission Resume PDF individually to Drive and attaches their Drive URLs.
+       */
+      async function syncRecordToGoogleAppsScript(record, resumePdfBlob = null, onProgress = null) {
+        const gasUrl = getActiveGasUrl();
+        if (!gasUrl) {
+          return { synced: false, error: 'Google Apps Script URL is not configured.' };
+        }
+
+        try {
+          if (onProgress) onProgress('Step 1/3: Writing student record to Google Sheet...');
+
+          // Strip heavy binaryData & base64 blobs from the initial metadata POST so it never hits payload limits
+          const cleanMetadataRecord = { ...record };
+          delete cleanMetadataRecord.docs;
+          delete cleanMetadataRecord.binaryData;
+
+          const metaRes = await postToGasWithTimeout(gasUrl, {
+            action: 'upsert_record',
+            record: cleanMetadataRecord,
+            auditEntries: record.auditEntries || []
+          }, 45000);
+
+          const folderId = metaRes.folderId || '';
+          const driveUrl = metaRes.driveUrl || '';
+          const uploadedFileLinks = {};
+
+          // Step B: Upload each individual document (Photo, Signature, SSLC, PUC, TC, PDFs) in separate small requests
+          const docEntries = record.docs ? Object.entries(record.docs) : [];
+          for (let i = 0; i < docEntries.length; i++) {
+            const [docKey, doc] = docEntries[i];
+            if (!doc || !doc.dataUrl || !doc.dataUrl.startsWith('data:')) continue;
+            if (onProgress) {
+              onProgress(`Step 2/3: Uploading ${doc.name} (${i + 1}/${docEntries.length}) to Drive...`);
+            }
+            const fileRes = await postToGasWithTimeout(gasUrl, {
+              action: 'upload_file',
+              admissionId: record.Admission_ID,
+              folderId: folderId,
+              docKey: docKey,
+              fileName: doc.name,
+              dataUrl: doc.dataUrl
+            }, 60000);
+            if (fileRes.fileUrl) {
+              uploadedFileLinks[docKey] = fileRes.fileUrl;
+            }
+          }
+
+          // Step C: Upload the generated Official Admission Resume PDF directly to the student's Google Drive folder
+          let resumePdfDriveUrl = '';
+          if (resumePdfBlob) {
+            if (onProgress) onProgress('Step 3/3: Saving Official Resume PDF to Google Drive...');
+            const pdfBuffer = await resumePdfBlob.arrayBuffer();
+            const pdfDataUrl = arrayBufferToDataUrl(pdfBuffer, 'application/pdf');
+            const pdfRes = await postToGasWithTimeout(gasUrl, {
+              action: 'upload_file',
+              admissionId: record.Admission_ID,
+              folderId: folderId,
+              docKey: 'generatedResumePdf',
+              fileName: `Official_Admission_Resume_${record.Admission_ID}.pdf`,
+              dataUrl: pdfDataUrl,
+              sendConfirmationEmail: true,
+              studentEmail: record.email || '',
+              studentName: record.candidateName10th || '',
+              course: record.course || '',
+              branch: record.branch || ''
+            }, 60000);
+            resumePdfDriveUrl = pdfRes.fileUrl || '';
+          }
+
+          updateSyncBanner(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+          return {
+            synced: true,
+            driveUrl,
+            folderId,
+            docLinks: uploadedFileLinks,
+            resumePdfDriveUrl
+          };
+        } catch (err) {
+          console.error('Cloud sync failed:', err);
+          return { synced: false, error: err.message || 'Unknown cloud sync error' };
         }
       }
 
@@ -2644,8 +2796,16 @@ function getOrCreateSheet_(ss, name, headers) {
 
       function renderResumePreview(rec) {
         activePreviewRecord = rec;
-        document.getElementById('notification-status-banner').textContent =
-          `Admission ID: ${rec.Admission_ID} | Drive Folder: ${rec.driveFolderPath} | Email: ${rec.emailStatus} | WhatsApp: ${rec.whatsAppStatus}`;
+        const bannerEl = document.getElementById('notification-status-banner');
+        const isDriveUrl = String(rec.driveFolderPath || '').startsWith('https://');
+        const driveHtml = isDriveUrl
+          ? `<a href="${rec.driveFolderPath}" target="_blank" rel="noreferrer" class="underline font-bold text-blue-900">Open Google Drive Folder</a>`
+          : `<code>${rec.driveFolderPath}</code>`;
+        const pdfLinkHtml = rec.resumePdfDriveUrl
+          ? ` | <a href="${rec.resumePdfDriveUrl}" target="_blank" rel="noreferrer" class="underline font-bold text-emerald-900">View Cloud PDF</a>`
+          : '';
+        bannerEl.innerHTML =
+          `Admission ID: <strong>${rec.Admission_ID}</strong> | Sync: <strong>${rec.cloudSyncStatus || 'SYNCED'}</strong> | Drive: ${driveHtml}${pdfLinkHtml} | Email: ${rec.emailStatus}`;
         document.getElementById('printable-resume').innerHTML = buildResumeHtml(rec, false);
       }
 
@@ -3076,46 +3236,85 @@ function getOrCreateSheet_(ss, name, headers) {
 
           const submitBtn = document.getElementById('submit-btn');
           submitBtn.disabled = true;
-          submitBtn.textContent = 'Syncing & Generating PDF...';
+          submitBtn.textContent = 'Generating Admission Resume PDF...';
 
-          const fd = new FormData(e.target);
-          const data = Object.fromEntries(fd.entries());
-          const records = JSON.parse(localStorage.getItem(STORAGE_KEYS.RECORDS) || '[]');
+          try {
+            const fd = new FormData(e.target);
+            const data = Object.fromEntries(fd.entries());
+            const records = JSON.parse(localStorage.getItem(STORAGE_KEYS.RECORDS) || '[]');
 
-          const admissionId = `2026${String(records.length + 1837).padStart(6, '0')}`;
-          const branchSlug = data.branch.replace(/[^a-zA-Z0-9]+/g, '_');
-          const nameSlug = data.candidateName10th.trim().toUpperCase().replace(/\s+/g, '_');
+            // Generate collision-resistant Admission ID (2026 + timestamp suffix or sequential)
+            const nextSeq = Math.max(records.length + 1837, Number(String(Date.now()).slice(-6)));
+            const admissionId = `2026${String(nextSeq).padStart(6, '0')}`;
+            const branchSlug = data.branch.replace(/[^a-zA-Z0-9]+/g, '_');
+            const nameSlug = data.candidateName10th.trim().toUpperCase().replace(/\s+/g, '_');
 
-          const newRecord = {
-            ...data,
-            Admission_ID: admissionId,
-            Submitted_At: new Date().toISOString(),
-            candidateName10th: data.candidateName10th.toUpperCase(),
-            candidateNameId: data.candidateNameId.toUpperCase(),
-            fatherName: data.fatherName.toUpperCase(),
-            motherName: data.motherName.toUpperCase(),
-            seatNumber: data.seatNumber.toUpperCase(),
-            idNumber: maskId(data.idNumber),
-            driveFolderPath: `/Admissions2026/${data.course}/${branchSlug}/${nameSlug}_${admissionId}/`,
-            emailStatus: `SENT (${data.email})`,
-            whatsAppStatus: `DELIVERED (+91-${data.whatsappMobile})`,
-            docs: uploadedDocs
-          };
+            const newRecord = {
+              ...data,
+              Admission_ID: admissionId,
+              Submitted_At: new Date().toISOString(),
+              candidateName10th: data.candidateName10th.toUpperCase(),
+              candidateNameId: data.candidateNameId.toUpperCase(),
+              fatherName: data.fatherName.toUpperCase(),
+              motherName: data.motherName.toUpperCase(),
+              seatNumber: data.seatNumber.toUpperCase(),
+              idNumber: maskId(data.idNumber),
+              driveFolderPath: `/Admissions2026/${data.course}/${branchSlug}/${nameSlug}_${admissionId}/`,
+              emailStatus: `PENDING (${data.email})`,
+              whatsAppStatus: `READY (+91-${data.whatsappMobile})`,
+              cloudSyncStatus: 'PENDING',
+              docs: uploadedDocs
+            };
 
-          const cloudRes = await syncRecordToGoogleAppsScript({ ...newRecord, rawIdForGovSync: data.idNumber });
-          if (cloudRes.synced && cloudRes.driveUrl) {
-            newRecord.driveFolderPath = cloudRes.driveUrl;
+            // 1. Render Resume HTML immediately and build the complete merged PDF Blob independently of cloud sync
+            renderResumePreview(newRecord);
+            let resumePdfBlob = null;
+            try {
+              resumePdfBlob = await buildCompleteResumePdfBlob(document.getElementById('printable-resume'), newRecord);
+            } catch (pdfErr) {
+              console.warn('Client PDF generation warning:', pdfErr);
+            }
+
+            // 2. Sync student row + chunked attachments + generated Resume PDF to Google Sheets & Drive
+            const cloudRes = await syncRecordToGoogleAppsScript(
+              { ...newRecord, rawIdForGovSync: data.idNumber },
+              resumePdfBlob,
+              (stepMsg) => { submitBtn.textContent = stepMsg; }
+            );
+
+            if (cloudRes.synced) {
+              newRecord.cloudSyncStatus = 'SYNCED';
+              newRecord.emailStatus = `SENT (${data.email})`;
+              if (cloudRes.driveUrl) newRecord.driveFolderPath = cloudRes.driveUrl;
+              if (cloudRes.resumePdfDriveUrl) newRecord.resumePdfDriveUrl = cloudRes.resumePdfDriveUrl;
+            } else {
+              newRecord.cloudSyncStatus = `LOCAL ONLY (${cloudRes.error || 'Sync failed'})`;
+              newRecord.emailStatus = `NOT SENT (Cloud sync error)`;
+            }
+
+            // 3. Save locally as backup & re-render status banner with exact cloud result
+            records.push(newRecord);
+            localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(records));
+            localStorage.removeItem(STORAGE_KEYS.DRAFT);
+
+            renderResumePreview(newRecord);
+            switchView('resume');
+
+            if (!cloudRes.synced) {
+              alert(
+                `Saved locally on this device (ID: ${admissionId}), but Google Sheets/Drive sync reported an error:\n\n` +
+                `${cloudRes.error}\n\n` +
+                `Please verify that your Google Apps Script is deployed as a Web App (Execute as: Me, Who has access: Anyone).`
+              );
+            }
+          } catch (unexpectedErr) {
+            console.error('Submission error:', unexpectedErr);
+            alert('An unexpected error occurred during submission: ' + unexpectedErr.message);
+          } finally {
+            // Always restore button state so UI can never stay stuck
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit & Sync to Cloud';
           }
-
-          records.push(newRecord);
-          localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(records));
-          localStorage.removeItem(STORAGE_KEYS.DRAFT);
-
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Submit & Sync to Cloud';
-
-          renderResumePreview(newRecord);
-          switchView('resume');
         });
 
         // Resume View Action Buttons
