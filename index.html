@@ -51,6 +51,62 @@
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col font-sans">
 
+  <!-- =========================================================================
+       [NEW - SIGN-IN GATE SCREEN]: Shown first before any portal content loads
+  ========================================================================== -->
+  <section id="portal-signin-gate" aria-labelledby="gate-heading"
+    class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-950 via-slate-900 to-blue-900 px-4 py-8 no-print">
+    <div class="max-w-md w-full bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+      <!-- Institutional Branding Header -->
+      <div class="bg-blue-950 text-white px-6 py-5 text-center border-b border-blue-900">
+        <p class="text-[11px] uppercase tracking-wider text-blue-200">Visvesvaraya Technological University, Belagavi (Region: 2 | Code: JI)</p>
+        <h1 id="gate-heading" class="text-lg sm:text-xl font-bold tracking-tight mt-1">JAIN COLLEGE OF ENGINEERING, BELAGAVI</h1>
+        <p class="text-xs text-blue-300 mt-0.5">Student Admission &amp; Resume Portal — Academic Year 2026–27</p>
+      </div>
+
+      <!-- Sign-In Form (Uses the exact same server-side staff_login authentication mechanism) -->
+      <div class="p-6 sm:p-7 space-y-4">
+        <div class="text-center">
+          <h2 class="text-base font-bold text-slate-900">Authorized Portal Sign-In</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Please sign in with your institutional staff credentials to access the admission portal.</p>
+        </div>
+
+        <form id="gate-login-form" class="space-y-4" autocomplete="off">
+          <div>
+            <label for="gateUser" class="block text-xs font-semibold text-slate-800 mb-1">Staff Username *</label>
+            <input id="gateUser" name="gateUser" type="text" required autofocus
+              placeholder="Enter assigned staff username"
+              class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm bg-white" />
+          </div>
+
+          <div>
+            <label for="gatePass" class="block text-xs font-semibold text-slate-800 mb-1">Passcode *</label>
+            <input id="gatePass" name="gatePass" type="password" required
+              placeholder="Enter your passcode"
+              class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm bg-white" />
+          </div>
+
+          <p id="gate-login-error" role="alert" aria-live="polite"
+            class="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 font-semibold hidden"></p>
+
+          <button type="submit" id="gate-login-btn"
+            class="w-full py-2.5 px-4 rounded-lg bg-blue-950 hover:bg-blue-900 text-white font-bold text-sm shadow cursor-pointer transition">
+            Sign In to Admission Portal
+          </button>
+        </form>
+
+        <div class="pt-3 border-t border-slate-200 text-center text-[11px] text-slate-500">
+          Protected Access &bull; VTU Belagavi &amp; JCE Admission Office
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       [NEW - PROTECTED PORTAL SHELL]: Hidden until Sign-In Gate succeeds
+  ========================================================================== -->
+  <div id="portal-shell" class="hidden min-h-screen flex flex-col">
+
   <!-- TOP INSTITUTIONAL HEADER -->
   <header class="bg-blue-950 text-white shadow-md no-print">
     <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -1385,6 +1441,7 @@ function getOrCreateSheet_(ss, name, headers) {
   <footer class="bg-slate-900 text-slate-400 text-xs py-4 text-center no-print">
     &copy; 2026 Jain College of Engineering, Belagavi &bull; Affiliated to Visvesvaraya Technological University (VTU), Belagavi
   </footer>
+  </div><!-- End #portal-shell -->
 
   <!-- =====================================================================
        APPLICATION LOGIC (APPS SCRIPT SYNC, PDF/ZIP EXPORT, SEAT MATRIX, RBAC, CAMERA SCANNER)
@@ -3097,15 +3154,24 @@ function getOrCreateSheet_(ss, name, headers) {
         matrixGrid.innerHTML = cards.join('');
       }
 
-      function checkAdminSession() {
+      // [NEW - SIGN-IN GATE CONTROLLER]: Reveals #portal-shell only when a valid authenticated session exists
+      function checkPortalGateSession() {
         const session = JSON.parse(sessionStorage.getItem(STORAGE_KEYS.STAFF) || 'null');
         const isValidSession = !!(session && session.token && (!session.expiresAt || Date.now() < session.expiresAt));
         if (session && !isValidSession) {
           sessionStorage.removeItem(STORAGE_KEYS.STAFF);
         }
+        document.getElementById('portal-signin-gate').classList.toggle('hidden', isValidSession);
+        document.getElementById('portal-shell').classList.toggle('hidden', !isValidSession);
+        return isValidSession;
+      }
+
+      function checkAdminSession() {
+        const isValidSession = checkPortalGateSession();
+        const session = JSON.parse(sessionStorage.getItem(STORAGE_KEYS.STAFF) || 'null');
         document.getElementById('admin-login-box').classList.toggle('hidden', isValidSession);
         document.getElementById('admin-dashboard').classList.toggle('hidden', !isValidSession);
-        if (isValidSession) {
+        if (isValidSession && session) {
           document.getElementById('staff-session-badge').textContent =
             `Logged in as: ${session.username} | Role: ${session.role}`;
           renderAdminTable();
@@ -3233,6 +3299,51 @@ function getOrCreateSheet_(ss, name, headers) {
 
       // --- WIRE ALL LISTENERS ON DOM READY ---
       document.addEventListener('DOMContentLoaded', () => {
+        // [NEW - SIGN-IN GATE]: Enforce sign-in gate immediately before initializing portal content
+        checkPortalGateSession();
+
+        document.getElementById('gate-login-form').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const errEl = document.getElementById('gate-login-error');
+          const gateBtn = document.getElementById('gate-login-btn');
+          errEl.classList.add('hidden');
+
+          const gasUrl = getActiveGasUrl();
+          if (!gasUrl) {
+            errEl.textContent = 'Backend endpoint URL is not configured.';
+            errEl.classList.remove('hidden');
+            return;
+          }
+
+          gateBtn.disabled = true;
+          gateBtn.textContent = 'Verifying Credentials...';
+
+          try {
+            // Authenticates against the existing Google Apps Script staff_login endpoint
+            const res = await postToGasWithTimeout(gasUrl, {
+              action: 'staff_login',
+              username: document.getElementById('gateUser').value.trim(),
+              password: document.getElementById('gatePass').value
+            }, 30000);
+
+            sessionStorage.setItem(STORAGE_KEYS.STAFF, JSON.stringify({
+              username: res.username,
+              role: res.role,
+              token: res.token,
+              expiresAt: res.expiresAt
+            }));
+            document.getElementById('gatePass').value = '';
+            checkAdminSession();
+            fetchLiveCloudRecords(true);
+          } catch (err) {
+            errEl.textContent = err.message || 'Authentication failed. Check username and passcode.';
+            errEl.classList.remove('hidden');
+          } finally {
+            gateBtn.disabled = false;
+            gateBtn.textContent = 'Sign In to Admission Portal';
+          }
+        });
+
         seedPredefinedRecords();
         updateSyncBanner();
         startLiveAutoPolling();
