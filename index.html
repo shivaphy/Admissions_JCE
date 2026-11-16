@@ -996,7 +996,7 @@
               <span class="font-bold text-slate-800">Ready-to-Deploy <code>Code.gs</code> (Paste into Google Apps Script)</span>
               <button type="button" id="copy-gas-code-btn" class="text-blue-700 font-semibold hover:underline cursor-pointer">Copy Code.gs</button>
             </div>
-            <pre id="gas-code-block" class="bg-slate-900 text-emerald-300 p-3 rounded text-[11px] overflow-x-auto leading-relaxed">const ROOT_FOLDER_ID = 'PASTE_YOUR_GOOGLE_DRIVE_FOLDER_ID_HERE';
+            <pre id="gas-code-block" class="bg-slate-900 text-emerald-300 p-3 rounded text-[11px] overflow-x-auto leading-relaxed">const ROOT_FOLDER_ID = '1sIxGlASaw1_rmDvTxOR5iAu7wBN4OsXq';
 const SPREADSHEET_ID = '1JTxFiho-kPoRV4K4j-vcYV10qNeXd26Db6hokWa5Wzo';
 
 const HEADERS = [
@@ -1018,6 +1018,9 @@ const HEADERS = [
   'driveFolderPath', 'resumePdfDriveUrl', 'emailStatus', 'whatsAppStatus', 'docLinksJson'
 ];
 
+// =========================================================================
+// MAIN POST ROUTER (Handles Staff Login, File Uploads &amp; Student Records)
+// =========================================================================
 function doPost(e) {
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);
@@ -1027,7 +1030,9 @@ function doPost(e) {
     }
     const body = JSON.parse(e.postData.contents);
     const action = body.action || 'upsert_record';
+    console.log('doPost invoked | action:', action, '| admissionId:', body.admissionId || (body.record &amp;&amp; body.record.Admission_ID) || 'N/A');
 
+    // 1. STAFF LOGIN ACTION
     if (action === 'staff_login') {
       return handleStaffLogin_(body);
     }
@@ -1035,7 +1040,27 @@ function doPost(e) {
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     const master = getOrCreateSheet_(ss, 'Master_Admissions', HEADERS);
 
+    // 2A. FALLBACK EMAIL-ONLY ACTION (If client PDF generation failed)
+    if (action === 'send_confirmation_email') {
+      const folder = body.folderId ? DriveApp.getFolderById(body.folderId) : null;
+      const folderUrl = folder ? folder.getUrl() : '';
+      const emailStatusMsg = dispatchStudentEmail_(
+        ss,
+        master,
+        body.admissionId,
+        body.studentEmail,
+        body.studentName,
+        body.course,
+        body.branch,
+        folderUrl,
+        null
+      );
+      return jsonResponse_({ status: 'OK', emailStatus: emailStatusMsg });
+    }
+
+    // 2B. FILE / PDF UPLOAD ACTION (Handles certificates and the Official Resume PDF + Email dispatch)
     if (action === 'upload_file') {
+      console.log('upload_file | docKey:', body.docKey, '| folderId:', body.folderId, '| sendConfirmationEmail:', body.sendConfirmationEmail);
       const folder = DriveApp.getFolderById(body.folderId);
       const commaIdx = body.dataUrl.indexOf(',');
       const base64 = commaIdx !== -1 ? body.dataUrl.slice(commaIdx + 1) : body.dataUrl;
@@ -1048,32 +1073,30 @@ function doPost(e) {
       }
       const file = folder.createFile(blob);
       const fileUrl = file.getUrl();
+      console.log('Saved file to Drive:', body.fileName, '-&gt;', fileUrl);
 
       updateRowFileLink_(master, body.admissionId, body.docKey, fileUrl);
 
       let emailStatusMsg = 'SKIPPED';
       if (body.sendConfirmationEmail &amp;&amp; body.studentEmail) {
-        try {
-          const pdfAttachment = blob.getAs(MimeType.PDF).setName(body.fileName);
-          MailApp.sendEmail({
-            to: String(body.studentEmail).trim(),
-            subject: 'Admission Confirmation &amp; Resume Copy - ' + body.admissionId + ' (' + body.studentName + ')',
-            body: 'Dear ' + body.studentName + ',\n\nYour admission details for ' + body.course +
-                  ' (' + body.branch + ') at Jain College of Engineering, Belagavi have been recorded.\n' +
-                  'Admission ID: ' + body.admissionId + '\nDrive Folder: ' + folder.getUrl() +
-                  '\n\nYour Official Student Admission Resume PDF is attached.',
-            attachments: [pdfAttachment]
-          });
-          emailStatusMsg = 'SENT (' + body.studentEmail + ')';
-        } catch (mailErr) {
-          emailStatusMsg = 'EMAIL_ERROR: ' + mailErr.toString();
-        }
-        updateRowColumnByName_(master, body.admissionId, 'emailStatus', emailStatusMsg);
+        const pdfAttachment = blob.getAs(MimeType.PDF).setName(body.fileName);
+        emailStatusMsg = dispatchStudentEmail_(
+          ss,
+          master,
+          body.admissionId,
+          body.studentEmail,
+          body.studentName,
+          body.course,
+          body.branch,
+          folder.getUrl(),
+          pdfAttachment
+        );
       }
 
       return jsonResponse_({ status: 'OK', fileUrl: fileUrl, emailStatus: emailStatusMsg });
     }
 
+    // 3. CREATE OR UPDATE STUDENT RECORD ACTION (upsert_record)
     const payload = body.record || body;
     const root = DriveApp.getFolderById(ROOT_FOLDER_ID);
     const yFolder = getOrCreateFolder_(root, 'Admissions2026');
@@ -1083,12 +1106,12 @@ function doPost(e) {
     const sFolder = getOrCreateFolder_(bFolder, safeStudent + '_' + payload.Admission_ID);
 
     payload.driveFolderPath = sFolder.getUrl();
-    payload.emailStatus = payload.email ? 'SENT (' + payload.email + ')' : 'N/A';
+    payload.emailStatus = payload.email ? 'PENDING (' + payload.email + ')' : 'N/A';
 
     const data = master.getDataRange().getValues();
     let existingRowIndex = -1;
     for (let i = 1; i &lt; data.length; i++) {
-      if (String(data[i][0]) === String(payload.Admission_ID)) {
+      if (String(data[i][0]).trim() === String(payload.Admission_ID).trim()) {
         existingRowIndex = i + 1;
         break;
       }
@@ -1125,12 +1148,120 @@ function doPost(e) {
       driveUrl: sFolder.getUrl()
     });
   } catch (err) {
+    console.error('doPost fatal error:', err);
     return jsonResponse_({ status: 'ERROR', message: err.toString() });
   } finally {
     lock.releaseLock();
   }
 }
 
+// =========================================================================
+// CENTRALIZED EMAIL DISPATCH &amp; SHEET STATUS UPDATER
+// =========================================================================
+function dispatchStudentEmail_(ss, master, admissionId, studentEmail, studentName, course, branch, folderUrl, pdfAttachment) {
+  let emailStatusMsg = 'PENDING';
+  try {
+    const cleanEmail = String(studentEmail || '').trim();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      throw new Error('Invalid email format: ' + studentEmail);
+    }
+
+    console.log('Sending email to:', cleanEmail, '| Remaining daily quota:', MailApp.getRemainingDailyQuota());
+
+    const mailOptions = {
+      to: cleanEmail,
+      subject: 'Admission Confirmation &amp; Resume Copy - ' + admissionId + ' (' + studentName + ')',
+      body: 'Dear ' + studentName + ',\n\n' +
+            'Your admission details for ' + course + ' (' + branch + ') at Jain College of Engineering, Belagavi have been successfully recorded.\n' +
+            'Admission ID: ' + admissionId + '\n' +
+            (folderUrl ? 'Google Drive Folder: ' + folderUrl + '\n\n' : '\n') +
+            (pdfAttachment
+              ? 'Your Official Student Admission Resume PDF is attached to this email.\n\n'
+              : 'Note: Your record is confirmed in our system. You can download or reprint your Official Admission Resume PDF anytime from the Track / Reprint portal.\n\n') +
+            'Regards,\nAdmission Office, Jain College of Engineering, Belagavi'
+    };
+
+    if (pdfAttachment) {
+      mailOptions.attachments = [pdfAttachment];
+    }
+
+    MailApp.sendEmail(mailOptions);
+    emailStatusMsg = pdfAttachment ? 'SENT (' + cleanEmail + ')' : 'SENT_NO_PDF (' + cleanEmail + ')';
+    console.log('Email dispatched successfully:', emailStatusMsg);
+  } catch (mailErr) {
+    emailStatusMsg = 'EMAIL_ERROR: ' + mailErr.toString();
+    console.error('Email delivery error for ID ' + admissionId + ':', mailErr);
+  }
+
+  // Immediately update Master_Admissions and all branch tabs with true email status
+  updateRowColumnByName_(master, admissionId, 'emailStatus', emailStatusMsg);
+  const sheetList = ss.getSheets();
+  for (let s = 0; s &lt; sheetList.length; s++) {
+    const sh = sheetList[s];
+    const name = sh.getName();
+    if (name !== 'Master_Admissions' &amp;&amp; name !== 'Audit_Log' &amp;&amp; name !== 'Staff_Users') {
+      updateRowColumnByName_(sh, admissionId, 'emailStatus', emailStatusMsg);
+    }
+  }
+
+  return emailStatusMsg;
+}
+
+// =========================================================================
+// SELF-HEALING RECOVERY FUNCTION FOR ANY PENDING / FAILED EMAIL ROWS
+// =========================================================================
+function retryPendingAdmissionEmails() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const master = ss.getSheetByName('Master_Admissions');
+  if (!master || master.getLastRow() &lt; 2) return;
+
+  const data = master.getDataRange().getValues();
+  const headers = data[0].map(h =&gt; String(h).trim());
+  const idIdx = headers.indexOf('Admission_ID');
+  const nameIdx = headers.indexOf('candidateName10th');
+  const courseIdx = headers.indexOf('course');
+  const branchIdx = headers.indexOf('branch');
+  const emailIdx = headers.indexOf('email');
+  const folderIdx = headers.indexOf('driveFolderPath');
+  const statusIdx = headers.indexOf('emailStatus');
+
+  if (statusIdx &lt; 0 || emailIdx &lt; 0) {
+    console.error('Required columns emailStatus or email not found in Master_Admissions.');
+    return;
+  }
+
+  for (let i = 1; i &lt; data.length; i++) {
+    const status = String(data[i][statusIdx] || '');
+    const email = String(data[i][emailIdx] || '').trim();
+    if (!email || (!status.startsWith('PENDING') &amp;&amp; !status.startsWith('EMAIL_ERROR'))) continue;
+
+    const admissionId = String(data[i][idIdx]).trim();
+    const studentName = String(data[i][nameIdx] || 'Student').trim();
+    const course = String(data[i][courseIdx] || '');
+    const branch = String(data[i][branchIdx] || '');
+    const folderUrl = String(data[i][folderIdx] || '');
+    let pdfAttachment = null;
+
+    const folderIdMatch = folderUrl.match(/[-\w]{25,}/);
+    if (folderIdMatch) {
+      try {
+        const folder = DriveApp.getFolderById(folderIdMatch[0]);
+        const files = folder.getFilesByName('Official_Admission_Resume_' + admissionId + '.pdf');
+        if (files.hasNext()) {
+          pdfAttachment = files.next().getBlob().getAs(MimeType.PDF);
+        }
+      } catch (driveErr) {
+        console.warn('Could not read folder for ' + admissionId + ':', driveErr.message);
+      }
+    }
+
+    dispatchStudentEmail_(ss, master, admissionId, email, studentName, course, branch, folderUrl, pdfAttachment);
+  }
+}
+
+// =========================================================================
+// GET ENDPOINT (Fetches records for live sync)
+// =========================================================================
 function doGet() {
   try {
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -1151,6 +1282,9 @@ function doGet() {
   }
 }
 
+// =========================================================================
+// STAFF AUTHENTICATION &amp; USER MANAGEMENT HELPERS
+// =========================================================================
 function getSessionSecret_() {
   const props = PropertiesService.getScriptProperties();
   let secret = props.getProperty('SESSION_SECRET');
@@ -1182,13 +1316,16 @@ function handleStaffLogin_(body) {
   if (!username || !password) {
     return jsonResponse_({ status: 'ERROR', message: 'Username and password are required.' });
   }
+
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const sheet = ss.getSheetByName('Staff_Users');
   if (!sheet) {
     return jsonResponse_({ status: 'ERROR', message: 'Staff_Users table not initialized. Run setupStaffUsersSheet first.' });
   }
+
   const inputHash = sha256Hex_(password);
   const rows = sheet.getDataRange().getValues();
+
   for (let i = 1; i &lt; rows.length; i++) {
     const [rowUser, rowHash, rowRole, rowActive] = rows[i];
     if (String(rowUser).trim().toLowerCase() === username.toLowerCase()) {
@@ -1200,6 +1337,7 @@ function handleStaffLogin_(body) {
         const payloadStr = `${rowUser}|${rowRole}|${expiresAt}`;
         const signature = sha256Hex_(payloadStr + '|' + getSessionSecret_());
         const token = Utilities.base64Encode(`${payloadStr}|${signature}`);
+
         return jsonResponse_({
           status: 'OK',
           username: rowUser,
@@ -1210,6 +1348,7 @@ function handleStaffLogin_(body) {
       }
     }
   }
+
   return jsonResponse_({ status: 'ERROR', message: 'Invalid username or passcode.' });
 }
 
@@ -1221,22 +1360,27 @@ function verifyStaffToken_(token, allowedRoles) {
     if (parts.length !== 4) return null;
     const [username, role, expiresAtStr, signature] = parts;
     if (Date.now() &gt; Number(expiresAtStr)) return null;
+
     const expectedSig = sha256Hex_(`${username}|${role}|${expiresAtStr}|${getSessionSecret_()}`);
     if (signature !== expectedSig) return null;
     if (allowedRoles &amp;&amp; allowedRoles.indexOf(role) === -1) return null;
+
     return { username, role };
   } catch (e) {
     return null;
   }
 }
 
+// =========================================================================
+// DRIVE &amp; SHEET UTILITY HELPERS
+// =========================================================================
 function updateRowFileLink_(sheet, admissionId, docKey, fileUrl) {
   const data = sheet.getDataRange().getValues();
-  const headers = data[0];
+  const headers = data[0].map(h =&gt; String(h).trim());
   const resumeCol = headers.indexOf('resumePdfDriveUrl') + 1;
   const linksCol = headers.indexOf('docLinksJson') + 1;
   for (let i = 1; i &lt; data.length; i++) {
-    if (String(data[i][0]) === String(admissionId)) {
+    if (String(data[i][0]).trim() === String(admissionId).trim()) {
       if (docKey === 'generatedResumePdf' &amp;&amp; resumeCol &gt; 0) {
         sheet.getRange(i + 1, resumeCol).setValue(fileUrl);
       } else if (linksCol &gt; 0) {
@@ -1252,10 +1396,14 @@ function updateRowFileLink_(sheet, admissionId, docKey, fileUrl) {
 
 function updateRowColumnByName_(sheet, admissionId, colName, value) {
   const data = sheet.getDataRange().getValues();
-  const colIdx = data[0].indexOf(colName) + 1;
-  if (colIdx &lt; 1) return;
+  const normalizedHeaders = data[0].map(h =&gt; String(h).trim());
+  const colIdx = normalizedHeaders.indexOf(colName) + 1;
+  if (colIdx &lt; 1) {
+    console.warn('Column not found in sheet ' + sheet.getName() + ': ' + colName);
+    return;
+  }
   for (let i = 1; i &lt; data.length; i++) {
-    if (String(data[i][0]) === String(admissionId)) {
+    if (String(data[i][0]).trim() === String(admissionId).trim()) {
       sheet.getRange(i + 1, colIdx).setValue(value);
       break;
     }
@@ -1263,6 +1411,7 @@ function updateRowColumnByName_(sheet, admissionId, colName, value) {
 }
 
 function testAndAuthorizeEmail() {
+  console.log('Remaining daily MailApp quota:', MailApp.getRemainingDailyQuota());
   MailApp.sendEmail({
     to: Session.getActiveUser().getEmail(),
     subject: 'JCE Admission Portal - Email Permission Verified',
@@ -1276,7 +1425,7 @@ function jsonResponse_(obj) {
 }
 
 function getOrCreateFolder_(parent, name) {
-  const clean = String(name).replace(/[/\\?%*:|"&lt;&gt;]/g, '-').trim();
+  const clean = String(name).replace(/[/\?%*:|"&lt;&gt;]/g, '-').trim();
   const it = parent.getFoldersByName(clean);
   return it.hasNext() ? it.next() : parent.createFolder(clean);
 }
@@ -1288,6 +1437,27 @@ function getOrCreateSheet_(ss, name, headers) {
     sheet.appendRow(headers);
   }
   return sheet;
+}
+
+function setStaffPassword() {
+  const username = 'dataentry_jce';
+  const newPassword = 'Admission@2026';
+  const role = 'DATAENTRY';
+
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = getOrCreateSheet_(ss, 'Staff_Users', ['Username', 'Password_SHA256', 'Role', 'Active']);
+  const hash = sha256Hex_(newPassword);
+  const rows = sheet.getDataRange().getValues();
+
+  for (let i = 1; i &lt; rows.length; i++) {
+    if (String(rows[i][0]).trim().toLowerCase() === username.toLowerCase()) {
+      sheet.getRange(i + 1, 2, 1, 3).setValues([[hash, role, 'YES']]);
+      console.log('Updated password for: ' + username);
+      return;
+    }
+  }
+  sheet.appendRow([username, hash, role, 'YES']);
+  console.log('Created new staff user: ' + username);
 }</pre>
           </div>
         </div>
@@ -1687,7 +1857,19 @@ function getOrCreateSheet_(ss, name, headers) {
             resumePdfDriveUrl = pdfRes.fileUrl || '';
             serverEmailStatus = pdfRes.emailStatus || '';
           } else {
-            serverEmailStatus = 'SKIPPED (PDF blob empty)';
+            // Fallback: Even if client PDF generation failed, still dispatch confirmation email & update Master_Admissions status
+            if (onProgress) onProgress('Step 3/3: Sending Email Confirmation...');
+            const fallbackRes = await postToGasWithTimeout(gasUrl, {
+              action: 'send_confirmation_email',
+              admissionId: record.Admission_ID,
+              folderId: folderId,
+              studentEmail: record.email || '',
+              studentName: record.candidateName10th || '',
+              course: record.course || '',
+              branch: record.branch || '',
+              pdfError: record.pdfBuildError || 'PDF blob unavailable'
+            }, 45000);
+            serverEmailStatus = fallbackRes.emailStatus || 'SENT (No PDF Attachment)';
           }
 
           updateSyncBanner(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
@@ -3785,15 +3967,18 @@ function getOrCreateSheet_(ss, name, headers) {
             await new Promise(resolve => setTimeout(resolve, 150));
 
             let resumePdfBlob = null;
+            let pdfBuildError = '';
             try {
               resumePdfBlob = await buildCompleteResumePdfBlob(document.getElementById('printable-resume'), newRecord);
+              console.log('Generated Resume PDF bytes:', resumePdfBlob ? resumePdfBlob.size : 0);
             } catch (pdfErr) {
-              console.warn('Client PDF generation warning:', pdfErr);
+              pdfBuildError = pdfErr.message || String(pdfErr);
+              console.error('Client PDF generation failed:', pdfErr);
             }
 
             // 2. Sync student row + chunked attachments + generated Resume PDF to Google Sheets & Drive
             const cloudRes = await syncRecordToGoogleAppsScript(
-              { ...newRecord, rawIdForGovSync: data.idNumber },
+              { ...newRecord, rawIdForGovSync: data.idNumber, pdfBuildError },
               resumePdfBlob,
               (stepMsg) => { submitBtn.textContent = stepMsg; }
             );
