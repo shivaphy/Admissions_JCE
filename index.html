@@ -1051,21 +1051,27 @@ function doPost(e) {
 
       updateRowFileLink_(master, body.admissionId, body.docKey, fileUrl);
 
+      let emailStatusMsg = 'SKIPPED';
       if (body.sendConfirmationEmail &amp;&amp; body.studentEmail) {
         try {
+          const pdfAttachment = blob.getAs(MimeType.PDF).setName(body.fileName);
           MailApp.sendEmail({
-            to: body.studentEmail,
+            to: String(body.studentEmail).trim(),
             subject: 'Admission Confirmation &amp; Resume Copy - ' + body.admissionId + ' (' + body.studentName + ')',
             body: 'Dear ' + body.studentName + ',\n\nYour admission details for ' + body.course +
                   ' (' + body.branch + ') at Jain College of Engineering, Belagavi have been recorded.\n' +
                   'Admission ID: ' + body.admissionId + '\nDrive Folder: ' + folder.getUrl() +
                   '\n\nYour Official Student Admission Resume PDF is attached.',
-            attachments: [blob]
+            attachments: [pdfAttachment]
           });
-        } catch (mailErr) {}
+          emailStatusMsg = 'SENT (' + body.studentEmail + ')';
+        } catch (mailErr) {
+          emailStatusMsg = 'EMAIL_ERROR: ' + mailErr.toString();
+        }
+        updateRowColumnByName_(master, body.admissionId, 'emailStatus', emailStatusMsg);
       }
 
-      return jsonResponse_({ status: 'OK', fileUrl: fileUrl });
+      return jsonResponse_({ status: 'OK', fileUrl: fileUrl, emailStatus: emailStatusMsg });
     }
 
     const payload = body.record || body;
@@ -1242,6 +1248,26 @@ function updateRowFileLink_(sheet, admissionId, docKey, fileUrl) {
       break;
     }
   }
+}
+
+function updateRowColumnByName_(sheet, admissionId, colName, value) {
+  const data = sheet.getDataRange().getValues();
+  const colIdx = data[0].indexOf(colName) + 1;
+  if (colIdx &lt; 1) return;
+  for (let i = 1; i &lt; data.length; i++) {
+    if (String(data[i][0]) === String(admissionId)) {
+      sheet.getRange(i + 1, colIdx).setValue(value);
+      break;
+    }
+  }
+}
+
+function testAndAuthorizeEmail() {
+  MailApp.sendEmail({
+    to: Session.getActiveUser().getEmail(),
+    subject: 'JCE Admission Portal - Email Permission Verified',
+    body: 'Google Apps Script MailApp permission is active and ready to send student admission PDFs.'
+  });
 }
 
 function jsonResponse_(obj) {
@@ -1638,10 +1664,11 @@ function getOrCreateSheet_(ss, name, headers) {
             }
           }
 
-          // Step C: Upload the generated Official Admission Resume PDF directly to the student's Google Drive folder
+          // Step C: Upload the generated Official Admission Resume PDF directly to the student's Google Drive folder & send email
           let resumePdfDriveUrl = '';
-          if (resumePdfBlob) {
-            if (onProgress) onProgress('Step 3/3: Saving Official Resume PDF to Google Drive...');
+          let serverEmailStatus = '';
+          if (resumePdfBlob && resumePdfBlob.size > 0) {
+            if (onProgress) onProgress('Step 3/3: Saving Official Resume PDF & Sending Email...');
             const pdfBuffer = await resumePdfBlob.arrayBuffer();
             const pdfDataUrl = arrayBufferToDataUrl(pdfBuffer, 'application/pdf');
             const pdfRes = await postToGasWithTimeout(gasUrl, {
@@ -1658,6 +1685,9 @@ function getOrCreateSheet_(ss, name, headers) {
               branch: record.branch || ''
             }, 60000);
             resumePdfDriveUrl = pdfRes.fileUrl || '';
+            serverEmailStatus = pdfRes.emailStatus || '';
+          } else {
+            serverEmailStatus = 'SKIPPED (PDF blob empty)';
           }
 
           updateSyncBanner(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
@@ -1666,7 +1696,8 @@ function getOrCreateSheet_(ss, name, headers) {
             driveUrl,
             folderId,
             docLinks: uploadedFileLinks,
-            resumePdfDriveUrl
+            resumePdfDriveUrl,
+            emailStatus: serverEmailStatus
           };
         } catch (err) {
           console.error('Cloud sync failed:', err);
@@ -3498,8 +3529,11 @@ function getOrCreateSheet_(ss, name, headers) {
               docs: uploadedDocs
             };
 
-            // 1. Render Resume HTML immediately and build the complete merged PDF Blob independently of cloud sync
+            // 1. Reveal Resume view first so #printable-resume is visible (not display:none) when html2pdf rasterizes it
             renderResumePreview(newRecord);
+            switchView('resume');
+            await new Promise(resolve => setTimeout(resolve, 150));
+
             let resumePdfBlob = null;
             try {
               resumePdfBlob = await buildCompleteResumePdfBlob(document.getElementById('printable-resume'), newRecord);
@@ -3516,7 +3550,7 @@ function getOrCreateSheet_(ss, name, headers) {
 
             if (cloudRes.synced) {
               newRecord.cloudSyncStatus = 'SYNCED';
-              newRecord.emailStatus = `SENT (${data.email})`;
+              newRecord.emailStatus = cloudRes.emailStatus || `SENT (${data.email})`;
               if (cloudRes.driveUrl) newRecord.driveFolderPath = cloudRes.driveUrl;
               if (cloudRes.resumePdfDriveUrl) newRecord.resumePdfDriveUrl = cloudRes.resumePdfDriveUrl;
               if (cloudRes.docLinks && newRecord.docs) {
