@@ -6,6 +6,7 @@
   <title>VTU Student Admission Portal 2026 | Jain College of Engineering, Belagavi</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Client-side PDF & ZIP generation libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
@@ -3228,7 +3229,46 @@ function setStaffPassword() {
       async function buildCompleteResumePdfBlob(element, rec) {
         const JsPdfCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
         if (!JsPdfCtor) {
-          throw new Error('jsPDF library is not loaded.');
+          // Pure pdf-lib fallback if jsPDF CDN was blocked so a valid PDF is STILL generated and emailed
+          if (window.PDFLib) {
+            const fallbackDoc = await window.PDFLib.PDFDocument.create();
+            const page = fallbackDoc.addPage([595.28, 841.89]); // A4
+            const font = await fallbackDoc.embedFont(window.PDFLib.StandardFonts.HelveticaBold);
+            const regFont = await fallbackDoc.embedFont(window.PDFLib.StandardFonts.Helvetica);
+            page.drawText('JAIN COLLEGE OF ENGINEERING, BELAGAVI', { x: 50, y: 780, size: 14, font });
+            page.drawText('OFFICIAL STUDENT ADMISSION RESUME (2026-27)', { x: 50, y: 760, size: 11, font });
+            const summaryLines = [
+              `Admission ID: ${rec.Admission_ID || '-'}`,
+              `Candidate Name: ${rec.candidateName10th || '-'}`,
+              `Course & Branch: ${rec.programme || ''} - ${rec.course || ''} (${rec.branch || '-'})`,
+              `Father / Mother: ${rec.fatherName || '-'} / ${rec.motherName || '-'}`,
+              `DOB / Gender: ${rec.dob || '-'} / ${rec.gender || '-'}`,
+              `Admission Mode / Seat / Rank: ${rec.admissionMode || '-'} / ${rec.seatNumber || '-'} / ${rec.rank || '-'}`,
+              `Category / Caste: ${rec.allottedCategory || '-'} / ${rec.caste || '-'}`,
+              `Mobile / Email: ${rec.mobile || '-'} / ${rec.email || '-'}`,
+              `SSLC Reg / Marks: ${rec.sslcRegNo || '-'} (${rec.sslcObtainedMarks || '-'}/${rec.sslcMaxMarks || '-'})`,
+              `PUC Reg / Marks: ${rec.pucRegNo || '-'} (${rec.pucObtainedMarks || '-'}/${rec.pucMaxMarks || '-'})`
+            ];
+            summaryLines.forEach((line, i) => {
+              page.drawText(line, { x: 50, y: 725 - i * 20, size: 10, font: regFont });
+            });
+            const pdfKeys = REQUIRED_DOCS.map(d => d.key).filter(k =>
+              rec.docs && rec.docs[k] && rec.docs[k].dataUrl && rec.docs[k].dataUrl.startsWith('data:application/pdf')
+            );
+            for (const k of pdfKeys) {
+              try {
+                const bytes = rec.docs[k].binaryData instanceof Uint8Array
+                  ? rec.docs[k].binaryData
+                  : dataUrlToUint8Array(rec.docs[k].dataUrl);
+                const attachedDoc = await window.PDFLib.PDFDocument.load(bytes);
+                const copied = await fallbackDoc.copyPages(attachedDoc, attachedDoc.getPageIndices());
+                copied.forEach(p => fallbackDoc.addPage(p));
+              } catch (e) {}
+            }
+            const outBytes = await fallbackDoc.save();
+            return new Blob([outBytes], { type: 'application/pdf' });
+          }
+          throw new Error('Neither jsPDF nor pdf-lib library is loaded.');
         }
 
         const doc = new JsPdfCtor({ unit: 'mm', format: 'a4', orientation: 'portrait' });
