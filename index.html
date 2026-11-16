@@ -3037,24 +3037,275 @@ function getOrCreateSheet_(ss, name, headers) {
       }
 
       /**
-       * Generates the complete Admission Resume PDF containing:
-       * 1) All entered details + Photo + Signature + inline embedded JPG/PNG documents (via html2pdf)
-       * 2) Every uploaded PDF document appended as full pages at the end (via pdf-lib)
+       * Generates the complete Official Student Admission Resume PDF directly using jsPDF + pdf-lib:
+       * 1) Draws crisp, vector-sharp VTU & JCE institutional headers, tables, student photo, signature,
+       *    academic marks, board names, and all uploaded image documents (JPG/PNG) directly onto A4 pages.
+       *    (Eliminates html2canvas / Tailwind oklch() / scroll-offset blank white page bugs completely.)
+       * 2) Appends every page of every uploaded PDF attachment via pdf-lib.
        */
       async function buildCompleteResumePdfBlob(element, rec) {
-        if (!window.html2pdf) return null;
+        const JsPdfCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+        if (!JsPdfCtor) {
+          throw new Error('jsPDF library is not loaded.');
+        }
 
-        const basePdfArrayBuffer = await html2pdf()
-          .set({
-            margin: 8,
-            image: { type: 'jpeg', quality: 0.96 },
-            html2canvas: { scale: 2, useCORS: true },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-          })
-          .from(element)
-          .outputPdf('arraybuffer');
+        const doc = new JsPdfCtor({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+        const pageW = doc.internal.pageSize.getWidth();   // 210 mm
+        const pageH = doc.internal.pageSize.getHeight();  // 297 mm
+        const margin = 12;
+        const contentW = pageW - margin * 2;
+        let y = 14;
 
-        // Merge any uploaded PDF attachments into the final PDF using pdf-lib
+        const checkPageBreak = (neededH) => {
+          if (y + neededH > pageH - 14) {
+            doc.addPage();
+            y = 14;
+          }
+        };
+
+        const drawSectionHeader = (title) => {
+          checkPageBreak(10);
+          doc.setFillColor(23, 37, 84); // blue-950
+          doc.rect(margin, y, contentW, 6.5, 'F');
+          doc.setTextColor(255, 255, 255);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(9);
+          doc.text(title, margin + 2.5, y + 4.5);
+          y += 7.5;
+          doc.setTextColor(15, 23, 42);
+        };
+
+        const drawTwoColRow = (l1, v1, l2, v2, rowWidth = contentW) => {
+          const col1W = rowWidth * 0.22;
+          const col2W = rowWidth * 0.28;
+          const col3W = rowWidth * 0.22;
+          const col4W = rowWidth * 0.28;
+
+          doc.setFontSize(8);
+          const lines1 = doc.splitTextToSize(String(v1 || '-'), col2W - 3);
+          const lines2 = doc.splitTextToSize(String(v2 || '-'), col4W - 3);
+          const lineCount = Math.max(lines1.length, lines2.length, 1);
+          const rowH = Math.max(6.5, lineCount * 4 + 2.5);
+
+          checkPageBreak(rowH);
+
+          // Label backgrounds
+          doc.setFillColor(241, 245, 249);
+          doc.rect(margin, y, col1W, rowH, 'F');
+          doc.rect(margin + col1W + col2W, y, col3W, rowH, 'F');
+
+          // Cell borders
+          doc.setDrawColor(148, 163, 184);
+          doc.rect(margin, y, col1W, rowH);
+          doc.rect(margin + col1W, y, col2W, rowH);
+          doc.rect(margin + col1W + col2W, y, col3W, rowH);
+          doc.rect(margin + col1W + col2W + col3W, y, col4W, rowH);
+
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(30, 41, 59);
+          doc.text(String(l1), margin + 1.5, y + 4.2);
+          doc.text(String(l2), margin + col1W + col2W + 1.5, y + 4.2);
+
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(15, 23, 42);
+          doc.text(lines1, margin + col1W + 1.5, y + 4.2);
+          doc.text(lines2, margin + col1W + col2W + col3W + 1.5, y + 4.2);
+
+          y += rowH;
+        };
+
+        const drawFullWidthRow = (label, value) => {
+          const labelW = contentW * 0.22;
+          const valW = contentW - labelW;
+          doc.setFontSize(8);
+          const lines = doc.splitTextToSize(String(value || '-'), valW - 3);
+          const rowH = Math.max(6.5, lines.length * 4 + 2.5);
+
+          checkPageBreak(rowH);
+          doc.setFillColor(241, 245, 249);
+          doc.rect(margin, y, labelW, rowH, 'F');
+          doc.setDrawColor(148, 163, 184);
+          doc.rect(margin, y, labelW, rowH);
+          doc.rect(margin + labelW, y, valW, rowH);
+
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(30, 41, 59);
+          doc.text(String(label), margin + 1.5, y + 4.2);
+
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(15, 23, 42);
+          doc.text(lines, margin + labelW + 1.5, y + 4.2);
+          y += rowH;
+        };
+
+        // --- INSTITUTIONAL HEADER ---
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(23, 37, 84);
+        doc.text('VISVESVARAYA TECHNOLOGICAL UNIVERSITY, BELAGAVI', pageW / 2, y, { align: 'center' });
+        y += 5;
+        doc.setFontSize(12);
+        doc.setTextColor(15, 23, 42);
+        doc.text('JAIN COLLEGE OF ENGINEERING, BELAGAVI (Code: JI | Region: 2)', pageW / 2, y, { align: 'center' });
+        y += 4.5;
+        doc.setFontSize(9);
+        doc.setTextColor(71, 85, 105);
+        doc.text('OFFICIAL STUDENT ADMISSION RESUME — ACADEMIC YEAR 2026–27', pageW / 2, y, { align: 'center' });
+        y += 3;
+        doc.setDrawColor(23, 37, 84);
+        doc.setLineWidth(0.6);
+        doc.line(margin, y, pageW - margin, y);
+        doc.setLineWidth(0.2);
+        y += 4;
+
+        // --- PERSONAL DETAILS + PHOTO & SIGNATURE BOX ---
+        drawSectionHeader('STUDENT PERSONAL & IDENTITY DETAILS');
+        const photoBoxW = 30;
+        const leftBlockW = contentW - photoBoxW;
+        const startPersonalY = y;
+
+        drawTwoColRow('Admission ID', rec.Admission_ID, 'Programme / Course', `${rec.programme || ''} - ${rec.course || ''}`, leftBlockW);
+        drawTwoColRow('Branch', rec.branch, 'Gender / DOB', `${rec.gender || '-'} / ${rec.dob || '-'}`, leftBlockW);
+        drawTwoColRow('Candidate (10th)', rec.candidateName10th, 'Name (Govt ID)', rec.candidateNameId, leftBlockW);
+        drawTwoColRow("Father's Name", rec.fatherName, "Mother's Name", rec.motherName, leftBlockW);
+        drawTwoColRow('Nationality / State', `${rec.nationality || '-'} / ${rec.stateCountry || '-'}`, `${rec.idType || 'ID'} Number`, maskId(rec.idNumber), leftBlockW);
+
+        const endPersonalY = y;
+        const personalBlockH = endPersonalY - startPersonalY;
+        const photoX = margin + leftBlockW;
+
+        // Draw outer photo/signature box matching exact height of the 5 rows
+        doc.setDrawColor(148, 163, 184);
+        doc.rect(photoX, startPersonalY, photoBoxW, personalBlockH);
+
+        const photoData = rec.docs?.photo?.dataUrl;
+        if (photoData && photoData.startsWith('data:image/')) {
+          try {
+            const fmt = photoData.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+            doc.addImage(photoData, fmt, photoX + 3, startPersonalY + 1.5, photoBoxW - 6, Math.min(22, personalBlockH - 11));
+          } catch (e) { console.warn('Photo embed warning:', e); }
+        } else {
+          doc.setFontSize(7);
+          doc.setTextColor(100, 116, 139);
+          doc.text('PHOTO', photoX + photoBoxW / 2, startPersonalY + 12, { align: 'center' });
+        }
+
+        const sigData = rec.docs?.signature?.dataUrl;
+        if (sigData && sigData.startsWith('data:image/')) {
+          try {
+            const fmt = sigData.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+            doc.addImage(sigData, fmt, photoX + 3, endPersonalY - 8.5, photoBoxW - 6, 7);
+          } catch (e) { console.warn('Signature embed warning:', e); }
+        } else {
+          doc.setFontSize(6.5);
+          doc.setTextColor(100, 116, 139);
+          doc.text('SIGNATURE', photoX + photoBoxW / 2, endPersonalY - 3.5, { align: 'center' });
+        }
+
+        y += 3;
+
+        // --- ADMISSION, CATEGORY & QUOTA DETAILS ---
+        drawSectionHeader('ADMISSION, CATEGORY & QUOTA DETAILS');
+        drawTwoColRow('Admission Date', rec.admissionDate, 'Admission Mode', rec.admissionMode);
+        drawTwoColRow('Seat Number', rec.seatNumber, 'Entrance Rank', rec.rank);
+        drawTwoColRow('Joining Semester', rec.joiningSemester, 'Seat Type', rec.seatType);
+        drawTwoColRow('Actual Category', `${rec.actualCategory || '-'} (${rec.caste || '-'})`, 'Allotted Category', rec.allottedCategory);
+        drawTwoColRow('HK-371J / Kannada', `HK: ${rec.hk371jClaim || 'No'} | KA: ${rec.kannadaMedClaim || 'No'}`, 'SSP Scholarship ID', rec.applySsp === 'Yes' ? (rec.sspId || 'Pending') : 'Not Applied');
+        y += 3;
+
+        // --- CONTACT & ADDRESS DETAILS ---
+        drawSectionHeader('CONTACT & RESIDENTIAL DETAILS');
+        drawTwoColRow('Student Mobile', rec.mobile, 'WhatsApp Mobile', rec.whatsappMobile);
+        drawTwoColRow('Registered Email', rec.email, 'Parent Occupation', `${rec.parentOccupation || '-'} (${rec.cityType || '-'})`);
+        drawFullWidthRow('Current / Hostel', `${rec.currentAddress || '-'} (Owner/Warden: ${rec.ownerPrincipalName || '-'} - ${rec.ownerPrincipalMobile || '-'})`);
+        drawFullWidthRow('Permanent Address', rec.permanentAddress);
+        drawFullWidthRow('Correspondence', rec.correspondenceAddress);
+        y += 3;
+
+        // --- QUALIFYING EXAMINATION MARKS & BOARDS ---
+        const sslcBoardDisplay = rec.sslcBoard === 'Other' ? (rec.sslcOtherBoard || 'Other Board') : (rec.sslcBoard || 'Karnataka SSLC Board');
+        const pucBoardDisplay = rec.pucBoard === 'Other' ? (rec.pucOtherBoard || 'Other Board') : (rec.pucBoard || 'PU Board');
+
+        drawSectionHeader('QUALIFYING EXAMINATION MARKS & BOARDS');
+        drawTwoColRow('SSLC / X Board', `${sslcBoardDisplay} (${rec.sslcState || 'KA'})`, 'SSLC Reg. No', `${rec.sslcRegNo || '-'} (${rec.sslcPassMonthYear || '-'})`);
+        drawTwoColRow('SSLC Marks', `${rec.sslcObtainedMarks || '-'} / ${rec.sslcMaxMarks || '-'}`, 'Studied in KA', rec.sslcStudiedInKA || 'Yes');
+
+        if (rec.pucRegNo || rec.pucObtainedMarks) {
+          drawTwoColRow('PUC / XII Board', `${pucBoardDisplay} (${rec.pucState || 'KA'})`, 'PUC Reg. No', `${rec.pucRegNo || '-'} (${rec.pucPassMonthYear || '-'})`);
+          drawTwoColRow('PUC Total Marks', `${rec.pucObtainedMarks || '-'} / ${rec.pucMaxMarks || '-'}`, 'PCM Score & Avg', `${rec.pcmTotal || '-'}/300 (${rec.pcmAvg || '-'}%)`);
+        }
+        if (rec.diplomaRegNo) {
+          drawTwoColRow('Diploma Reg. No', `${rec.diplomaRegNo} (${rec.diplomaPassMonthYear || '-'})`, 'Diploma Marks', `${rec.diplomaObtainedMarks || '-'} / ${rec.diplomaMaxMarks || '-'}`);
+        }
+        if (rec.degreeRegNo) {
+          drawTwoColRow('Degree Reg. No', `${rec.degreeRegNo} (${rec.degreePassMonthYear || '-'})`, 'Degree Marks', `${rec.degreeObtainedMarks || '-'} / ${rec.degreeMaxMarks || '-'}`);
+        }
+        y += 3;
+
+        // --- UPLOADED DOCUMENTS CHECKLIST ---
+        const allAttachedKeys = REQUIRED_DOCS.map(d => d.key).filter(k => rec.docs && rec.docs[k]);
+        drawSectionHeader('UPLOADED DOCUMENTS CHECKLIST');
+        if (allAttachedKeys.length === 0) {
+          drawFullWidthRow('Documents', 'No supporting documents uploaded.');
+        } else {
+          allAttachedKeys.forEach((k, idx) => {
+            const meta = REQUIRED_DOCS.find(d => d.key === k);
+            const d = rec.docs[k];
+            const isPdf = d.dataUrl && d.dataUrl.startsWith('data:application/pdf');
+            drawFullWidthRow(
+              `${idx + 1}. ${meta ? meta.label : k}`,
+              `${d.name} (${d.normalizedFormat}, ${d.sizeKB} KB) — ${isPdf ? 'Appended as PDF Page(s)' : 'Embedded Inline Below'}`
+            );
+          });
+        }
+        y += 3;
+
+        // --- DECLARATION & SIGNATURES ---
+        checkPageBreak(26);
+        doc.setFillColor(248, 250, 252);
+        doc.setDrawColor(148, 163, 184);
+        doc.rect(margin, y, contentW, 22, 'FD');
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(30, 41, 59);
+        const declText = 'DECLARATION: This data will be shared with SSP, NAD, and Social Welfare Department for availing government schemes. All entries have been verified against original documents stored in Google Drive.';
+        doc.text(doc.splitTextToSize(declText, contentW - 4), margin + 2, y + 4);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Signature of Candidate', margin + 4, y + 19);
+        doc.text('Signature & Seal of Admission Officer', pageW - margin - 4, y + 19, { align: 'right' });
+        y += 26;
+
+        // --- EMBED ALL UPLOADED IMAGE DOCUMENTS (EXCLUDING PHOTO & SIGNATURE ALREADY IN HEADER) ---
+        const imageDocKeys = REQUIRED_DOCS.map(d => d.key).filter(k =>
+          k !== 'photo' && k !== 'signature' && rec.docs && rec.docs[k] &&
+          rec.docs[k].dataUrl && rec.docs[k].dataUrl.startsWith('data:image/')
+        );
+
+        for (const k of imageDocKeys) {
+          const meta = REQUIRED_DOCS.find(d => d.key === k);
+          const d = rec.docs[k];
+          doc.addPage();
+          y = 14;
+          drawSectionHeader(`ENCLOSED DOCUMENT: ${(meta ? meta.label : k).toUpperCase()} (${d.name})`);
+          try {
+            const fmt = d.dataUrl.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+            const props = doc.getImageProperties(d.dataUrl);
+            const maxImgW = contentW;
+            const maxImgH = pageH - y - 16;
+            const ratio = Math.min(maxImgW / props.width, maxImgH / props.height, 1);
+            const drawW = props.width * ratio;
+            const drawH = props.height * ratio;
+            const offsetX = margin + (contentW - drawW) / 2;
+            doc.addImage(d.dataUrl, fmt, offsetX, y + 2, drawW, drawH);
+          } catch (imgErr) {
+            doc.setFontSize(9);
+            doc.text(`Could not render inline preview for ${d.name}.`, margin, y + 8);
+          }
+        }
+
+        const basePdfArrayBuffer = doc.output('arraybuffer');
+
+        // --- MERGE ANY UPLOADED PDF ATTACHMENTS AT THE END VIA PDF-LIB ---
         const pdfKeys = REQUIRED_DOCS.map(d => d.key).filter(k =>
           rec.docs && rec.docs[k] && rec.docs[k].dataUrl && rec.docs[k].dataUrl.startsWith('data:application/pdf')
         );
@@ -3063,10 +3314,9 @@ function getOrCreateSheet_(ss, name, headers) {
           const mergedPdf = await window.PDFLib.PDFDocument.load(basePdfArrayBuffer);
           for (const k of pdfKeys) {
             try {
-              const base64 = rec.docs[k].dataUrl.split(',')[1];
-              const binaryStr = atob(base64);
-              const bytes = new Uint8Array(binaryStr.length);
-              for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+              const bytes = rec.docs[k].binaryData instanceof Uint8Array
+                ? rec.docs[k].binaryData
+                : dataUrlToUint8Array(rec.docs[k].dataUrl);
               const attachedDoc = await window.PDFLib.PDFDocument.load(bytes);
               const copiedPages = await mergedPdf.copyPages(attachedDoc, attachedDoc.getPageIndices());
               copiedPages.forEach(page => mergedPdf.addPage(page));
